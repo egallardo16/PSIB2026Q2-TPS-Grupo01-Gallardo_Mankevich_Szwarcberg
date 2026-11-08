@@ -1,0 +1,19 @@
+# Datos de PhysioNet: se bajan con scripts/descargar_dataset.py (~375 MB).
+# No se versionan. Los 5 registros de muestra de registros/ si estan en el repo.
+data/
+
+# Descargas interrumpidas por el script
+*.parcial
+
+# Entornos virtuales (el nuestro vive en ~/.venvs/psib-tps, fuera del repo)
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
