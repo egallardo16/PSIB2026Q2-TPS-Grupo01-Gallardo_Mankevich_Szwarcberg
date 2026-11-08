@@ -1,13 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+<<<<<<< Updated upstream
+=======
 
 def _mostrar_o_guardar(fig, guardar):
-    """Muestra la figura en pantalla, o la guarda en disco si se indicó ruta.
-
-    Permite usar las mismas funciones de forma interactiva (en un notebook) y
-    para generar las figuras del informe, sin duplicar el código del gráfico.
-    """
+    """Muestra la figura en pantalla, o la guarda en disco si se indicó ruta."""
     if guardar is None:
         plt.show()
     else:
@@ -15,8 +13,9 @@ def _mostrar_o_guardar(fig, guardar):
         plt.close(fig)
 
 
+>>>>>>> Stashed changes
 def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
-                 picos=None, titulo="ECG", guardar=None):
+                 picos=None, titulo="ECG"):
     """
     ecg    : señal (lista con voltajes en [mV])
     fs     : frecuencia de muestreo [Hz]
@@ -24,8 +23,11 @@ def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
     t_fin  : fin del tramo [s] (None = hasta el final)
     color  : color de la señal (nombre, hex o código de matplotlib)
     picos  : (opcional) índices de muestra de las R para marcarlas
+<<<<<<< Updated upstream
+=======
     guardar: (opcional) ruta donde guardar la figura. Si es None, se muestra
-             en pantalla como hasta ahora.
+             en pantalla.
+>>>>>>> Stashed changes
     """
     ecg = np.asarray(ecg)
     t_total = len(ecg) / fs
@@ -52,10 +54,10 @@ def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
     ax.set_xlim(t_ini, t_fin)
     ax.grid(alpha=0.3)
     plt.tight_layout()
-    _mostrar_o_guardar(fig, guardar)
+    plt.show()
 
 def graficar_tacograma(picos_R, fs, t_ini=0, t_fin=None, color="tab:blue",
-                       en_ms=True, titulo="Tacograma", guardar=None):
+                       en_ms=True, titulo="Tacograma"):
     """
     picos_R : índices de muestra de las ondas R
     fs      : frecuencia de muestreo [Hz]
@@ -63,8 +65,11 @@ def graficar_tacograma(picos_R, fs, t_ini=0, t_fin=None, color="tab:blue",
     t_fin   : fin del tramo [s] (None = hasta el final)
     color   : color del gráfico
     en_ms   : True = RR en milisegundos, False = en segundos
+<<<<<<< Updated upstream
+=======
     guardar : (opcional) ruta donde guardar la figura. Si es None, se muestra
-              en pantalla como hasta ahora.
+              en pantalla.
+>>>>>>> Stashed changes
     """
     picos_R = np.sort(np.asarray(picos_R, dtype=int))
     if len(picos_R) < 2:
@@ -87,11 +92,10 @@ def graficar_tacograma(picos_R, fs, t_ini=0, t_fin=None, color="tab:blue",
     ax.set_xlim(t_ini, t_fin)
     ax.grid(alpha=0.3)
     plt.tight_layout()
-    _mostrar_o_guardar(fig, guardar)
+    plt.show()
 
 def graficar_correlacion(validos, corr, fs, t_ini=0, t_fin=None, color="tab:blue",
-                         umbral=None, titulo="Correlación con plantilla local",
-                         guardar=None):
+                         umbral=None, titulo="Correlación con plantilla local"):
     """
     validos : índices de muestra de las R (salida de correlacion_latidos)
     corr    : correlación de cada latido con su plantilla
@@ -101,8 +105,11 @@ def graficar_correlacion(validos, corr, fs, t_ini=0, t_fin=None, color="tab:blue
     color   : color del gráfico
     umbral  : (opcional) valor de corte. Se dibuja una línea y se marcan en rojo
               los latidos por debajo. Si es "auto", usa mediana - 4*MAD.
+<<<<<<< Updated upstream
+=======
     guardar : (opcional) ruta donde guardar la figura. Si es None, se muestra
-              en pantalla como hasta ahora.
+              en pantalla.
+>>>>>>> Stashed changes
     """
     validos = np.asarray(validos, dtype=int)
     corr = np.asarray(corr, dtype=float)
@@ -133,4 +140,4 @@ def graficar_correlacion(validos, corr, fs, t_ini=0, t_fin=None, color="tab:blue
     ax.set_ylim(min(corr[m].min(), 0.9) - 0.02, 1.01)
     ax.grid(alpha=0.3)
     plt.tight_layout()
-    _mostrar_o_guardar(fig, guardar)
+    plt.show()
