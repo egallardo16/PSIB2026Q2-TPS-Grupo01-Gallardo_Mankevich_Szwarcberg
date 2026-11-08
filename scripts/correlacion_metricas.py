@@ -244,6 +244,7 @@ def graficar(matriz, orden, familias):
 
 
 def main() -> int:
+    """Calcula el solapamiento entre metricas, las agrupa y elige representantes."""
     archivo = CARACTERISTICAS / "metricas.csv"
     if not archivo.exists():
         print("Falta metricas.csv. Correr antes: python modulos/ventanas.py")

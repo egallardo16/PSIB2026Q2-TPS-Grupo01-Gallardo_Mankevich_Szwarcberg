@@ -113,6 +113,7 @@ def procesar(codigo: str) -> tuple[dict, pd.DataFrame]:
 
 
 def main() -> int:
+    """Procesa los registros indicados y guarda las tablas del procesamiento."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--sujetos", nargs="+", metavar="VPxx",
                     help="participantes a procesar; por defecto, todos")

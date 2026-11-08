@@ -200,6 +200,7 @@ def graficar(df):
 
 
 def main() -> int:
+    """Compara cada metrica entre tramos de 10 s y su minuto, y reporta el cociente."""
     if not (PROCESADO / "intervalos.csv").exists():
         print("Falta intervalos.csv. Correr antes: python scripts/procesar_registros.py")
         return 1
