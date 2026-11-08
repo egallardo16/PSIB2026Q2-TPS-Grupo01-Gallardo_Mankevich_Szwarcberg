@@ -84,3 +84,13 @@ def cargar_eventos(codigo: str) -> pd.DataFrame:
     df["orden"] = pd.Series(range(1, es_video.sum() + 1), index=df.index[es_video])
 
     return df[["evento", "condicion", "inicio_s", "fin_s", "duracion_s", "orden"]]
+
+
+if __name__ == "__main__":
+    # Ejecutar este archivo directamente muestra los eventos de un participante,
+    # para verificar a simple vista que la carga funciona.
+    import sys
+
+    codigo = sys.argv[1] if len(sys.argv) > 1 else "VP03"
+    print(f"Eventos de {codigo}:\n")
+    print(cargar_eventos(codigo).to_string(index=False))
