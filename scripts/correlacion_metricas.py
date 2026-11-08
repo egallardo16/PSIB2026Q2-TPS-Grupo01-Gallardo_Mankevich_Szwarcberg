@@ -68,6 +68,44 @@ MINIMO_VENTANAS = 10   # participantes con menos ventanas no aportan correlacion
 # media supera este valor. Es un umbral convencional para "redundante".
 UMBRAL_FAMILIA = 0.80
 
+# Orden de preferencia para elegir la representante de cada familia.
+#
+# Las familias salen de los datos, pero cual de sus miembros se reporta es una
+# decision nuestra, y se toma con criterios fijados de antemano para que no
+# dependa de que resultado dio cada una. Los criterios, en orden:
+#
+#   1. Que sea la metrica estandar en la bibliografia de HRV. Si se reporta
+#      SD1 en vez de rMSSD, el resultado no se puede comparar con otros
+#      trabajos; rMSSD y SDNN tienen incluso valores de referencia publicados
+#      (Shaffer y Ginsberg, 2017).
+#   2. Que tenga una interpretacion fisiologica clara. rMSSD refleja actividad
+#      parasimpatica; NFD y NSD son definiciones propias del articulo que no
+#      significan nada fuera de el.
+#   3. Que sea una proporcion o un promedio antes que un conteo absoluto. Los
+#      conteos como NN50 dependen de cuantos latidos entren en la ventana.
+#
+# Dentro de cada familia las metricas correlacionan por encima de 0.80 (y en
+# varios casos por encima de 0.99), asi que la eleccion casi no cambia el
+# resultado del analisis. Lo que importa no es cual se elige, sino no contar
+# varias versiones de la misma cantidad como si fueran hallazgos distintos.
+PRIORIDAD = [
+    "rMSSD",      # estandar de variabilidad de corto plazo; ademas quedo
+                  # entre las estables en ventanas de 10 s
+    "SDNN",       # estandar de variabilidad total, con normas publicadas
+    "Nmean",      # nivel de pulso, normalizado por el reposo de cada persona
+    "avNN",       # nivel de pulso sin normalizar
+    "pNN50",      # estandar, pero es una proporcion sobre pocos casos
+    "pNN20",      # igual que pNN50 con un umbral menos convencional
+    "CVNN",       # SDNN relativizado por avNN
+    "SD1",        # Poincare; equivalente a rMSSD salvo una constante
+    "SD2",        # Poincare; equivalente a SDNN salvo una constante
+    "std",        # dispersion de la frecuencia instantanea
+    "NFD",        # definicion propia del articulo
+    "NSD",        # definicion propia del articulo
+    "NN50",       # conteo absoluto: depende del largo de la ventana
+    "HRV_ihmig",  # ultima: su formula telescopa (ver modulos/metricas.py)
+]
+
 
 def matriz_promedio(df, columnas):
     """Correlacion media entre metricas, calculada dentro de cada participante.
@@ -148,6 +186,28 @@ def agrupar(matriz):
     return etiquetas, [matriz.columns[i] for i in orden]
 
 
+def elegir_representantes(tabla_familias):
+    """Elige una metrica por familia, segun el orden fijado en PRIORIDAD.
+
+    Recorre PRIORIDAD de principio a fin y se queda con la primera metrica de
+    cada familia que aparece. Asi la eleccion queda determinada por criterios
+    escritos de antemano y no por los resultados de cada metrica.
+    """
+    elegidas = {}
+
+    for metrica in PRIORIDAD:
+        fila = tabla_familias[tabla_familias.metrica == metrica]
+        if fila.empty:
+            continue                      # metrica excluida del analisis
+        familia = fila.familia.iloc[0]
+        # Solo se guarda la primera de cada familia: las siguientes ya tienen
+        # representante y son redundantes con ella.
+        if familia not in elegidas:
+            elegidas[familia] = metrica
+
+    return elegidas
+
+
 def graficar(matriz, orden, familias):
     """Mapa de calor de la matriz, con las metricas ordenadas por familia."""
     m = matriz.loc[orden, orden]
@@ -212,12 +272,20 @@ def main() -> int:
                                     "familia": familias})
                       .sort_values(["familia", "metrica"]))
 
-    print("=== familias ===")
+    # Representante de cada familia, segun el orden de PRIORIDAD.
+    elegidas = elegir_representantes(tabla_familias)
+    tabla_familias["representante"] = tabla_familias.apply(
+        lambda f: elegidas.get(f.familia) == f.metrica, axis=1)
+
+    print("=== familias y su representante ===")
     for numero, grupo in tabla_familias.groupby("familia"):
-        print(f"  Familia {numero}: {', '.join(grupo.metrica)}")
+        otras = [m for m in grupo.metrica if m != elegidas[numero]]
+        print(f"  Familia {numero}: {elegidas[numero]}"
+              + (f"   (representa a: {', '.join(otras)})" if otras else "   (sola)"))
 
     print(f"\nDe {len(columnas)} metricas quedan "
           f"{tabla_familias.familia.nunique()} grupos independientes.")
+    print(f"Metricas a reportar: {', '.join(elegidas.values())}")
 
     print("\n=== pares mas redundantes ===")
     # np.triu con k=1 se queda con el triangulo superior sin la diagonal, de
