@@ -280,7 +280,7 @@ La t llega a la misma conclusión en las tres.
 - **std baja porque al principio la HR se está moviendo,** justamente al bajar, no porque cambie la activación. Por eso no la interpretamos como "más" o "menos" activación.
 - **rMSSD no cambia** dentro del video.
 
-**Un dato que cambia la lectura** (exploratorio): en los 10 s *antes* de cada video, la HR ya está unos 6 lpm por encima del reposo, en 15 de 18 personas. Es decir, la HR no sube cuando aparece la araña (por eso P2 no da nada): ya estaba alta antes. Puede ser anticipación del próximo video, o efecto de lo que hacían entre videos (responder preguntas sobre el video anterior). Con este diseño no podemos separar las dos cosas.
+**Un dato que cambia la lectura** (exploratorio): en los 10 s *antes* de cada video, la HR ya está unos 4 a 6 lpm por encima del reposo (media +4,1; mediana +5,6), en 13 de 18 personas. Es decir, la HR no sube cuando aparece la araña (por eso P2 no da nada): ya estaba alta antes. Puede ser anticipación del próximo video, o efecto de lo que hacían entre videos (responder preguntas sobre el video anterior). Con este diseño no podemos separar las dos cosas.
 
 ## Conclusiones
 
@@ -289,7 +289,7 @@ La t llega a la misma conclusión en las tres.
 1. **Durante la sesión de videos hay más activación cardíaca que en el reposo, sobre todo al principio.** En los primeros videos la HR está unos 4 lpm por encima del reposo y la HRV (SDNN, rMSSD) es claramente menor (comparación exploratoria).
 2. **Esa activación es menor en la segunda mitad de la sesión (P3a).** Del primer al último video la HR baja unos 5 lpm y la HRV sube, en 15 o 16 de las 18 personas. Es significativo después de Holm. Hacia el final ya no se distingue del reposo. Pero el cambio se concentra en el paso de la mitad 1 a la mitad 2, más que en una baja gradual video a video.
 3. **Y también se apaga dentro de cada video (P3b).** La HR arranca alta y en unos 20 s baja al nivel del reposo. Pasa en las 18 personas.
-4. **La HR no sube cuando aparece la araña (P2): ya estaba alta antes.** En los 10 s previos a cada video la HR ya está unos 6 lpm por encima del reposo (exploratorio). La activación parece empezar antes del video, no con él.
+4. **La HR no sube cuando aparece la araña (P2): ya estaba alta antes.** En los 10 s previos a cada video la HR ya está unos 4 a 6 lpm por encima del reposo (exploratorio). La activación parece empezar antes del video, no con él.
 5. **Por eso, tomando los 16 videos completos, no hay diferencia significativa con el reposo (P1).** La dirección es la esperada y los efectos son medianos a grandes, pero al promediar los momentos activados con los ya tranquilos el efecto se diluye. Con 18 personas, además, falta poder para detectarlo.
 
 **En una frase:** la activación cardíaca es transitoria. Es máxima antes y al empezar cada video, se apaga en unos segundos, y es menor en la segunda mitad de la sesión que en la primera.
@@ -307,13 +307,6 @@ La t llega a la misma conclusión en las tres.
 - **Los resultados valen para Group3** (18 personas sin entrenamiento de biofeedback). No se pueden extender a los otros grupos sin analizarlos.
 - **El ECG no diagnostica ansiedad.** Lo que mostramos son cambios en la actividad cardíaca entre condiciones, compatibles con más activación durante la exposición.
 
-## Cosas abiertas
-
-- **Video de demostración como referencia previa.** Es lo único que se grabó antes de los clips de arañas. Si su contenido es neutro, podría servir como una línea de base anterior a la exposición y ayudar a separar habituación de paso del tiempo. Hay que confirmar en el protocolo qué muestra ese video.
-- **HRV (Ihmig) en la familia principal.** Mide tendencia y no variabilidad. Podríamos testear solo 4 métricas en P1 y reportarla aparte como exploratoria.
-- **Criterio del 20 % para descartar intervalos.** En algunos participantes descarta latidos normales: cambios de la HR con la respiración, no errores de detección. Eso puede bajar un poco rMSSD y SDNN. Una alternativa es comparar cada intervalo contra la mediana de los latidos cercanos (Lipponen & Tarvainen, 2019).
-- **Comparación entre grupos** (Kruskal-Wallis). Con solo Group3 no se puede hacer; habría que calcular las métricas para los 57 participantes.
-- **Lomb.** La consigna lo lista entre los temas obligatorios. El porqué de no hacerlo está en "Decisiones de diseño"; hay que llevarlo tal cual al informe.
 
 ## Referencias
 
