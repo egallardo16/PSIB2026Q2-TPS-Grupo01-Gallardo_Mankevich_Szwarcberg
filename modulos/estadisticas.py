@@ -106,6 +106,10 @@ def cargar_derivadas(): #Lee derivadas.csv: una fila por participante (delta HR 
     return pd.read_csv(CARACTERISTICAS / "derivadas.csv")
 
 
+def cargar_habituacion(): #Lee habituacion.csv: una fila por participante y metrica, con la pendiente a lo largo de los 16 videos.
+    return pd.read_csv(CARACTERISTICAS / "habituacion.csv")
+
+
 def metricas_representantes():
     familias = pd.read_csv(TABLAS / "familias_metricas.csv")
     return familias.loc[familias.representante, "metrica"].tolist()
@@ -234,7 +238,6 @@ def test_t_pareado(x, y):  # Analisis de SENSIBILIDAD: t de Student pareada.
 
   # Devuelve un diccionario con las mismas medidas que test_pareado, todas
     # con el prefijo "t_" para no confundirlas:
-
     #     t_estadistico  t de Student
     #     t_p            p-valor, sin corregir
     #     t_diferencia   media de las diferencias x - y
@@ -379,10 +382,9 @@ def p1_exposicion_vs_reposo(metricas, lista_metricas=None, duracion_s=60,
     return tabla
 
 
-#P2. ¿El pulso cambia apenas empieza cada video?
-#   - Dato de entrada: derivadas.csv, columna respuesta_inicial_lpm. Para cada
-#     participante es el promedio sobre sus 16 videos de
-#         HR(primeros 10 s del video) - HR(10 s previos al video).
+#P2. ¿La sñeal cambia apenas empieza cada video?
+# - Dato de entrada: derivadas.csv, columna respuesta_inicial_lpm. Para cada
+#     participante es el promedio sobre sus 16 videos de HR(primeros 10 s del video) - HR(10 s previos al video).
 #   - Test: test_vs_cero (Wilcoxon contra 0, con la t como sensibilidad).
 #     Es un solo test, asi que no hace falta corregir con Holm.
 #   - Como leerlo:
@@ -413,32 +415,177 @@ def p2_respuesta_inicial(derivadas):
     tabla["coinciden"] = tabla.significativo == tabla.t_significativo
     return tabla
 
-#P3a. ¿La respuesta baja a lo largo de los 16 videos?
-def p3a_habituacion_entre_videos(habituacion):
-   
-    # PENDIENTE. Idea:
-    #   - habituacion.csv tiene, para cada participante y metrica, la
-    #     pendiente de la recta metrica vs orden de exposicion (1 a 16).
-    #   - Para cada metrica: test_vs_cero sobre las pendientes de los
-    #     participantes. Pendiente negativa significativa = la respuesta baja.
-    #   - Corregir con Holm sobre las metricas testeadas.
-    #   - Opcional: test de Friedman (stats.friedmanchisquare) sobre la matriz
-    #     participantes x 16 posiciones, armada desde metricas.csv.
-    
-    raise NotImplementedError
+# Traduce el signo de un cambio a "mas" o "menos activacion".
+# Hace falta porque el signo significa cosas opuestas segun la metrica:
+#   - en el pulso (Nmean, avNN), que BAJE es calmarse;
+#   - en la variabilidad (SDNN, rMSSD, pNN20, std...), que SUBA es calmarse.
+# HRV_ihmig mide tendencia y no tiene una lectura de activacion clara.
+# std tampoco: en ventanas de 10 s refleja sobre todo cuanto se MUEVE el pulso
+# dentro de la ventana. Al empezar cada video el pulso esta bajando rapido, y
+# eso solo ya sube std en la primera ventana, sin que cambie la activacion.
+def _sentido(metrica, cambio):
+    if metrica in ("HRV_ihmig", "std") or pd.isna(cambio) or cambio == 0:
+        return "-"
+    if metrica == "avNN":                 # intervalo mas largo = pulso mas lento
+        return "menos activacion" if cambio > 0 else "mas activacion"
+    if metrica == "Nmean":
+        return "menos activacion" if cambio < 0 else "mas activacion"
+    return "menos activacion" if cambio > 0 else "mas activacion"
 
-#P3b. ¿La respuesta baja dentro de cada video?
-def p3b_habituacion_dentro_del_video(metricas):
 
-    # PENDIENTE. Idea:
-    #   - Usar las ventanas de 10 s de los videos (window_duration_s == 10).
-    #     Cada video tiene 6; la primera es la que empieza en el trigger.
-    #   - Para cada participante: promedio sobre los 16 videos de la primera
-    #     ventana y de la ultima (por ejemplo de avNN o Nmean, que son
-    #     estables a 10 s).
-    #   - test_pareado(primera, ultima).
+#P3a. ¿La respuesta baja a lo largo de los 16 videos? (habituacion entre videos)
+#   - Dato de entrada: habituacion.csv. Para cada participante y metrica tiene
+#     la PENDIENTE de la recta "metrica vs orden en que vio los videos (1 a 16)".
+#     Pendiente = cuanto cambia la metrica por cada video que pasa.
+#   - Test: para cada metrica, test_vs_cero sobre las 18 pendientes.
+#     Si las pendientes van de forma sistematica hacia un lado, la respuesta
+#     cambia a lo largo de la sesion. Holm sobre las metricas testeadas.
+#   - Como leerlo: mirar la columna "sentido".
+#       "menos activacion" y significativo -> habituacion (o relajacion con el
+#        tiempo: este diseño no permite separar las dos cosas).
+#   - Ademas sirve de control de P1: como el reposo es lo ultimo, si la
+#     activacion baja video a video, la comparacion videos vs reposo depende
+#     de que videos se miren.
+#   Devuelve una fila por metrica.
+def p3a_habituacion_entre_videos(habituacion, lista_metricas=None):
+    lista_metricas = lista_metricas or metricas_representantes()
 
-    raise NotImplementedError
+    filas = []
+    for metrica in lista_metricas:
+        suyas = habituacion[habituacion.metrica == metrica]
+        pendientes = suyas["pendiente"].dropna()
+
+        fila = {
+            "metrica": metrica,
+            # Descriptivos: cuanto cambia por video y del primero al ultimo.
+            "mediana_pendiente": pendientes.median(),
+            "mediana_cambio_1_a_16": suyas["cambio_total"].median(),
+            "suben": int((pendientes > 0).sum()),
+            "bajan": int((pendientes < 0).sum()),
+        }
+        fila.update(test_vs_cero(pendientes))
+        fila["sentido"] = _sentido(metrica, fila["diferencia"])
+        filas.append(fila)
+
+    tabla = pd.DataFrame(filas)
+    tabla["p_holm"] = corregir_holm(tabla.p)
+    tabla["significativo"] = tabla.p_holm < ALFA
+    tabla["t_p_holm"] = corregir_holm(tabla.t_p)
+    tabla["t_significativo"] = tabla.t_p_holm < ALFA
+    tabla["coinciden"] = tabla.significativo == tabla.t_significativo
+    return tabla
+
+
+#P3a, complemento: test de Friedman (Friedman, 1937).
+#   - Pregunta: ¿la metrica es distinta segun la posicion del video (1 a 16)?
+#     Es como Wilcoxon pero para mas de dos condiciones en las mismas personas:
+#     dentro de cada persona ordena sus 16 videos de menor a mayor y mira si
+#     algunas posiciones quedan siempre arriba o siempre abajo.
+#   - Diferencia con las pendientes: Friedman detecta CUALQUIER diferencia
+#     entre posiciones, no solo una tendencia que sube o baja. Por eso se
+#     reporta junto con las pendientes, que dicen hacia donde va el cambio.
+#   - Necesita a cada persona con los 16 videos validos (ventanas de 60 s).
+#   - Tamaño de efecto: W de Kendall (Kendall & Babington Smith, 1939), de 0
+#     a 1. Indica que tan parecido es el ordenamiento de las posiciones entre
+#     personas: 0 = cada uno distinto, 1 = todos iguales.
+#     Orientativo: 0.1 chico, 0.3 mediano, 0.5 grande.
+#   Devuelve una fila por metrica.
+def p3a_friedman(metricas, lista_metricas=None):
+    lista_metricas = lista_metricas or metricas_representantes()
+
+    videos = metricas[(metricas.window_duration_s == 60)
+                      & (metricas.condition == "exposicion")
+                      & metricas.valida]
+
+    filas = []
+    for metrica in lista_metricas:
+        # Matriz personas x posiciones: una fila por persona, una columna por
+        # posicion del video (1 a 16). Se descartan las personas incompletas.
+        matriz = videos.pivot_table(index="participant_id",
+                                    columns="exposure_order",
+                                    values=metrica).dropna()
+        n, k = matriz.shape
+
+        estadistico, p = stats.friedmanchisquare(
+            *[matriz[posicion] for posicion in matriz.columns])
+
+        filas.append({
+            "metrica": metrica,
+            "n": n,
+            "posiciones": k,
+            "chi2": estadistico,
+            "p": p,
+            "w_kendall": estadistico / (n * (k - 1)),
+        })
+
+    tabla = pd.DataFrame(filas)
+    tabla["p_holm"] = corregir_holm(tabla.p)
+    tabla["significativo"] = tabla.p_holm < ALFA
+    return tabla
+
+
+# Metricas para P3b. En ventanas de 10 s solo son confiables Nmean, avNN,
+# std y rMSSD (scripts/estabilidad_ventanas.py). Se toma una por familia:
+#   Nmean (nivel de pulso), std (variabilidad total, ocupa el lugar de SDNN),
+#   rMSSD (variabilidad de corto plazo). avNN se deja afuera porque es la
+#   misma familia que Nmean.
+METRICAS_P3B = ["Nmean", "std", "rMSSD"]
+
+
+#P3b. ¿La respuesta baja dentro de cada video? (habituacion dentro del estimulo)
+#   - Dato de entrada: las ventanas de 10 s de los videos en metricas.csv.
+#     Cada video tiene 6: la primera arranca con el video y la ultima cubre
+#     sus 10 s finales.
+#   - Para cada persona: promedio sobre sus 16 videos de la primera ventana y
+#     de la ultima. Asi queda un par de valores por persona.
+#   - Test: Wilcoxon pareado (ultima vs primera), t como sensibilidad, Holm
+#     sobre las 3 metricas.
+#   - Como leerlo: "diferencia" = ultima - primera. Mirar "sentido":
+#     "menos activacion" y significativo -> la respuesta baja mientras dura
+#     el video (habituacion dentro del estimulo; Matthews et al., 2015).
+#   Devuelve una fila por metrica.
+def p3b_habituacion_dentro_del_video(metricas, lista_metricas=METRICAS_P3B):
+    cortas = metricas[(metricas.window_duration_s == 10)
+                      & (metricas.condition == "exposicion")].copy()
+
+    # Posicion de cada ventana dentro de su video: 0 = primera, 5 = ultima.
+    # Se calcula ANTES de filtrar las invalidas, para que una ventana
+    # descartada no corra la numeracion de las demas.
+    por_video = cortas.groupby(["participant_id", "event_id"]).window_start_s
+    cortas["posicion"] = por_video.rank(method="first").astype(int) - 1
+    cortas["ultima"] = cortas.groupby(["participant_id", "event_id"]).posicion.transform("max")
+
+    cortas = cortas[cortas.valida]
+    primeras = (cortas[cortas.posicion == 0]
+                .groupby("participant_id")[lista_metricas].mean())
+    ultimas = (cortas[cortas.posicion == cortas.ultima]
+               .groupby("participant_id")[lista_metricas].mean())
+
+    filas = []
+    for metrica in lista_metricas:
+        # Se alinean por persona y se descartan las que no tienen las dos.
+        par = pd.concat([ultimas[metrica].rename("ultima"),
+                         primeras[metrica].rename("primera")], axis=1).dropna()
+
+        fila = {
+            "metrica": metrica,
+            "mediana_primera": par.primera.median(),
+            "mediana_ultima": par.ultima.median(),
+            "suben": int((par.ultima > par.primera).sum()),
+            "bajan": int((par.ultima < par.primera).sum()),
+        }
+        fila.update(test_w_pareado(par.ultima, par.primera))   # principal
+        fila.update(test_t_pareado(par.ultima, par.primera))   # sensibilidad
+        fila["sentido"] = _sentido(metrica, fila["diferencia"])
+        filas.append(fila)
+
+    tabla = pd.DataFrame(filas)
+    tabla["p_holm"] = corregir_holm(tabla.p)
+    tabla["significativo"] = tabla.p_holm < ALFA
+    tabla["t_p_holm"] = corregir_holm(tabla.t_p)
+    tabla["t_significativo"] = tabla.t_p_holm < ALFA
+    tabla["coinciden"] = tabla.significativo == tabla.t_significativo
+    return tabla
 
 
 #Si apretamos el botón para ejecutar, se core esto: 
@@ -476,7 +623,7 @@ if __name__ == "__main__":
 
     # --- P2: respuesta inicial al empezar cada video ---
     p2 = p2_respuesta_inicial(cargar_derivadas())
-    print("\n" + "=" * 70)
+    print("\n")
     print("P2. Respuesta inicial: HR(primeros 10 s) - HR(10 s previos), por persona")
     print("    Wilcoxon contra 0 (diferencia = Hodges-Lehmann); t como sensibilidad\n")
     print(p2[["n", "mediana", "aceleran", "frenan", "diferencia", "ic95_inf",
@@ -485,3 +632,30 @@ if __name__ == "__main__":
 
     p2.to_csv(TABLAS / "p2_respuesta_inicial.csv", index=False)
     print(f"\nGuardado en results/tables/p2_respuesta_inicial.csv")
+
+    # --- P3a: habituacion a lo largo de los 16 videos ---
+    p3a = p3a_habituacion_entre_videos(cargar_habituacion())
+    print("\n")
+    print("P3a. Habituacion entre videos: pendiente de cada metrica a lo largo de los 16")
+    print("     Wilcoxon de las pendientes contra 0 (diferencia = Hodges-Lehmann, por video)\n")
+    print(p3a[["metrica", "n", "mediana_cambio_1_a_16", "suben", "bajan",
+               "diferencia", "ic95_inf", "ic95_sup", "efecto", "p", "p_holm",
+               "significativo", "sentido", "coinciden"]].round(4).to_string(index=False))
+    p3a.to_csv(TABLAS / "p3a_pendientes.csv", index=False)
+
+    p3a_f = p3a_friedman(metricas)
+    print("\nP3a, complemento: Friedman sobre las 16 posiciones (efecto = W de Kendall)\n")
+    print(p3a_f.round(4).to_string(index=False))
+    p3a_f.to_csv(TABLAS / "p3a_friedman.csv", index=False)
+    print(f"\nGuardado en results/tables/p3a_pendientes.csv y p3a_friedman.csv")
+
+    # --- P3b: habituacion dentro de cada video ---
+    p3b = p3b_habituacion_dentro_del_video(metricas)
+    print("\n")
+    print("P3b. Habituacion dentro del video: ultimos 10 s vs primeros 10 s")
+    print("     Wilcoxon pareado (diferencia = ultima - primera, Hodges-Lehmann)\n")
+    print(p3b[["metrica", "n", "mediana_primera", "mediana_ultima", "suben",
+               "bajan", "diferencia", "ic95_inf", "ic95_sup", "efecto", "p",
+               "p_holm", "significativo", "sentido", "coinciden"]].round(4).to_string(index=False))
+    p3b.to_csv(TABLAS / "p3b_dentro_del_video.csv", index=False)
+    print(f"\nGuardado en results/tables/p3b_dentro_del_video.csv")
