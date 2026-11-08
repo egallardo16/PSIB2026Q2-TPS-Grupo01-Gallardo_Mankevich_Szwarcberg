@@ -1,0 +1,31 @@
+# Dependencias del TPS - Procesamiento de senales de ECG
+#
+# Instalacion (recomendado en un entorno virtual):
+#     python3 -m venv ~/.venvs/psib-tps
+#     ~/.venvs/psib-tps/bin/pip install -r requirements.txt
+#
+# Se indican versiones minimas en lugar de versiones exactas para que la
+# instalacion no falle en equipos con otras versiones de Python. Entre
+# parentesis, la version con la que efectivamente se desarrollo el trabajo
+# (Python 3.12.9).
+
+# --- Calculo numerico y manejo de datos ---
+numpy>=1.24          # (2.5.4)  operaciones vectoriales sobre las senales
+scipy>=1.10          # (1.18.1) filtros Butterworth, deteccion de picos
+pandas>=2.0          # (3.1.1)  lectura de los .txt y tablas de resultados
+
+# --- Graficos ---
+matplotlib>=3.7      # (3.11.2) visualizacion de ECG, tacogramas y resultados
+
+# --- Aprendizaje automatico ---
+scikit-learn>=1.3    # (1.9.1)  K-means para la deteccion de latidos ectopicos
+
+# --- Descarga del dataset ---
+requests>=2.31       # (2.34.2) usado por scripts/descargar_dataset.py
+                     # Trae su propio paquete de certificados (certifi), lo que
+                     # evita el error CERTIFICATE_VERIFY_FAILED que aparece en
+                     # macOS cuando Python no accede al llavero del sistema.
+
+# --- Notebooks ---
+jupyter>=1.0         # (1.1.1)  para abrir y ejecutar los .ipynb
+ipykernel>=6.25      # (7.4.0)  registra el entorno como kernel de Jupyter
