@@ -43,12 +43,18 @@ ARTEFACTO_INICIO, ARTEFACTO_FIN = 234, 242
 
 
 def cargar_ecg(codigo):
+    """Señal de ECG cruda de un participante, en mV."""
+    # usecols evita cargar en memoria las columnas de timestamp y etiqueta,
+    # que aca no se usan: son ~2 millones de filas por archivo.
     df = pd.read_csv(CRUDO / codigo / "BitalinoECG.txt", sep="\t", header=None,
                      names=["voltaje", "tiempo", "raw"], usecols=["voltaje"])
+    # coerce + dropna descartan cualquier valor no numerico suelto.
     return pd.to_numeric(df["voltaje"], errors="coerce").dropna().to_numpy()
 
 
 def cargar_picos(codigo):
+    """Posiciones de las ondas R ya detectadas por procesar_registros.py."""
+    # Se leen de disco en vez de volver a correr Pan-Tompkins sobre la señal.
     return np.load(PROCESADO / "picos" / f"{codigo}.npy")
 
 
@@ -57,6 +63,9 @@ def fig_crudo_vs_filtrado():
     ecg = cargar_ecg(EJEMPLO)
     filtrado = filtroPB(FS, ecg)
 
+    # Se grafica solo un tramo corto: con 34 minutos de señal no se
+    # distinguiria la morfologia de los latidos. El indice de muestra es el
+    # segundo multiplicado por la frecuencia de muestreo.
     i0, i1 = EJEMPLO_INICIO * FS, EJEMPLO_FIN * FS
     t = np.arange(i0, i1) / FS
 
@@ -84,6 +93,9 @@ def fig_qrs_detectados():
 
     i0, i1 = EJEMPLO_INICIO * FS, EJEMPLO_FIN * FS
     t = np.arange(i0, i1) / FS
+
+    # De todos los picos R del registro, solo los que caen en el tramo que se
+    # esta dibujando.
     en_tramo = picos[(picos >= i0) & (picos < i1)]
 
     fig, ax = plt.subplots(figsize=(11, 4))
@@ -103,6 +115,9 @@ def fig_tacogramas():
     """Tacograma RR frente a tacograma NN, marcando los intervalos descartados."""
     tabla = construir_intervalos(cargar_picos(EJEMPLO_ARTEFACTO), FS,
                                  EJEMPLO_ARTEFACTO)
+
+    # Mascara de los intervalos que no pasaron los criterios de validez.
+    # Se usa para marcarlos en rojo sobre el tacograma RR.
     descartados = tabla.quality_flag != FLAG_OK
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 6), sharex=True, sharey=True)
@@ -181,9 +196,15 @@ def fig_falso_positivo():
 def fig_calidad_cohorte():
     """Porcentaje de intervalos descartados en cada participante, por grupo."""
     df = pd.read_csv(PROCESADO / "calidad_deteccion.csv")
+
+    # subject_groups.csv trae una columna por grupo con los codigos adentro.
+    # Se lo da vuelta a un diccionario participante -> grupo para poder
+    # colorear cada barra.
     grupos = pd.read_csv(CRUDO / "subject_groups.csv")
     de_grupo = {vp: col for col in grupos.columns for vp in grupos[col].dropna()}
     df["grupo"] = df.participante.map(de_grupo)
+
+    # Ordenado por grupo y, dentro de cada grupo, de mejor a peor calidad.
     df = df.sort_values(["grupo", "pct_descartado"])
 
     colores = {"Group2": "tab:orange", "Group3": "tab:green", "Group4": "tab:red"}

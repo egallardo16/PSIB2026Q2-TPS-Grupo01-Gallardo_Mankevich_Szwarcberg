@@ -88,26 +88,37 @@ def recolectar():
                          (eventos.condicion == "exposicion")]
 
         for _, video in videos.iterrows():
-            # Se toman los primeros 60 s del video, para que todas las
-            # ventanas tengan la misma duracion (algunos duran 61 s).
+            # Se toman los primeros 60 s de cada video. Algunos duran 61 s, y
+            # recortar todos al mismo largo evita que una ventana mas larga
+            # parezca mas estable solo por tener mas latidos.
             inicio = video.inicio_s
             fin = inicio + DURACION_VENTANA
 
             nn_minuto = nn_en_rango(iv, inicio, fin)
-            if len(nn_minuto) < 30:        # minuto incompleto o muy sucio
+
+            # Un minuto con menos de 30 intervalos quedo recortado o muy
+            # sucio: no sirve ni como referencia ni para subdividir.
+            if len(nn_minuto) < 30:
                 continue
 
+            # Valor de referencia: la metrica calculada con el minuto entero.
             metricas_minuto = calcular_todas(nn_minuto)
             metricas_minuto.update(participante=participante,
                                    evento=video.evento)
             filas_minuto.append(metricas_minuto)
 
-            # Los seis tramos de 10 s en que se subdivide ese mismo minuto.
+            # El mismo minuto, ahora partido en seis tramos de 10 s. Como la
+            # condicion experimental no cambia dentro del video, lo que
+            # difiera entre estos seis tramos es error de estimacion.
             for k in range(DURACION_VENTANA // DURACION_SUBVENTANA):
                 desde = inicio + k * DURACION_SUBVENTANA
                 nn_tramo = nn_en_rango(iv, desde, desde + DURACION_SUBVENTANA)
+
+                # Tramos con muy pocos latidos se saltean: sus metricas
+                # serian ruido puro y exagerarian la dispersion medida.
                 if len(nn_tramo) < MINIMO_INTERVALOS:
                     continue
+
                 metricas_tramo = calcular_todas(nn_tramo)
                 metricas_tramo.update(participante=participante,
                                       evento=video.evento, tramo=k)

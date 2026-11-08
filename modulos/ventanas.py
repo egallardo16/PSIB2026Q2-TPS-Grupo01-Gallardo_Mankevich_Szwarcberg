@@ -78,8 +78,15 @@ def serie_en_rango(intervalos, inicio_s, fin_s):
     metricas los necesitan para no calcular diferencias entre latidos que no
     eran realmente consecutivos.
     """
+    # Se usa rr_end_s (el instante del latido que CIERRA el intervalo) como
+    # criterio de pertenencia, de modo que cada intervalo caiga en una sola
+    # ventana y no se cuente dos veces en el borde.
     dentro = intervalos[(intervalos.rr_end_s >= inicio_s) &
                         (intervalos.rr_end_s < fin_s)]
+
+    # Se devuelve nn_ms y no rr_ms: los intervalos que no pasaron el control
+    # de calidad vienen como NaN en esa columna, y las metricas los necesitan
+    # asi para no calcular diferencias entre latidos no consecutivos.
     return dentro.nn_ms.to_numpy()
 
 
@@ -93,10 +100,19 @@ def hr_basal(intervalos, eventos):
     if reposo.empty:
         return np.nan
 
+    # Se toma el reposo completo, no una ventana: cuantos mas latidos entren,
+    # mas estable queda la referencia contra la que se compara todo lo demas.
     nn = serie_en_rango(intervalos, reposo.inicio_s.iloc[0], reposo.fin_s.iloc[0])
+
+    # El basal se expresa en lpm porque Nmean trabaja sobre la frecuencia
+    # cardiaca instantanea, no sobre los intervalos.
     hr = frecuencia_instantanea(nn)
+
+    # Con uno o ningun latido valido no hay promedio que valga la pena.
     if np.sum(~np.isnan(hr)) < 2:
         return np.nan
+
+    # nanmean ignora los latidos descartados por el control de calidad.
     return float(np.nanmean(hr))
 
 
@@ -115,21 +131,33 @@ def metricas_de_participante(intervalos, eventos, participante, basal):
     """Todas las ventanas de un participante, en las dos duraciones."""
     filas = []
 
-    # Cantidad de intervalos esperables por segundo, segun el pulso de esta
-    # persona. Sirve para exigir un minimo proporcional a la ventana.
+    # Cuantos intervalos caben por segundo en esta persona. Se calcula con la
+    # mediana de sus propios NN, porque el umbral de validez tiene que
+    # adaptarse a su pulso: en alguien de 60 lpm entran la mitad de latidos
+    # en diez segundos que en alguien de 120.
     nn_mediana = np.nanmedian(intervalos.nn_ms.to_numpy())
     por_segundo = 1000.0 / nn_mediana if nn_mediana > 0 else 0
 
+    # Se recorren las dos duraciones de ventana: 60 s y 10 s.
     for duracion in DURACIONES:
+        # Cantidad minima de intervalos para aceptar una ventana de este largo.
         minimo = FRACCION_MINIMA * por_segundo * duracion
 
+        # Y dentro de cada duracion, todos los eventos del protocolo: los 16
+        # videos, el de demostracion y el reposo.
         for _, evento in eventos.iterrows():
             for inicio in ventanas_de_evento(evento, duracion):
+                # Los intervalos NN que caen en esta ventana, con los huecos.
                 nn = serie_en_rango(intervalos, inicio, inicio + duracion)
+
+                # El basal solo lo usa Nmean; las demas lo ignoran.
                 metricas = calcular_todas(nn, hr_basal=basal)
 
-                # En las ventanas cortas se descartan las metricas que el
-                # analisis de estabilidad mostro dominadas por el ruido.
+                # En las ventanas cortas se anulan las metricas que el
+                # analisis de estabilidad mostro dominadas por el ruido. Se
+                # dejan en NaN en vez de no guardarlas, para que la tabla
+                # tenga siempre las mismas columnas y quede explicito que no
+                # es que falten: es que no son interpretables a 10 s.
                 if duracion == 10:
                     for nombre in METRICAS:
                         if nombre not in METRICAS_10S:
@@ -151,17 +179,25 @@ def metricas_de_participante(intervalos, eventos, participante, basal):
 
 def generar(participantes=None):
     """Arma la tabla de metricas de todos los participantes indicados."""
+    # Las dos tablas que dejo el procesamiento de la señal.
     intervalos = pd.read_csv(PROCESADO / "intervalos.csv")
     eventos = pd.read_csv(PROCESADO / "eventos.csv")
     participantes = participantes or cohorte_group3()
 
     filas = []
     for participante in participantes:
+        # Se recortan las dos tablas a este participante antes de ventanear.
         iv = intervalos[intervalos.participant_id == participante]
         ev = eventos[eventos.participant_id == participante]
+
+        # El basal se calcula una sola vez por persona y vale para todas sus
+        # ventanas: es su nivel de reposo, no algo propio de cada ventana.
         basal = hr_basal(iv, ev)
+
         filas.extend(metricas_de_participante(iv, ev, participante, basal))
 
+    # Se fija el orden de las columnas para que el CSV salga siempre igual:
+    # primero las que identifican la ventana, despues las metricas.
     columnas = (["participant_id", "event_id", "condition", "exposure_order",
                  "window_start_s", "window_duration_s"]
                 + list(METRICAS) + ["n_intervalos", "valida"])

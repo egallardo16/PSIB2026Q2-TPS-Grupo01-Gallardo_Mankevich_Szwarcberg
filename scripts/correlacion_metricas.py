@@ -76,21 +76,36 @@ def matriz_promedio(df, columnas):
     """
     acumulador = []
 
+    # Una matriz por participante: se usan solo SUS ventanas, de modo que la
+    # correlacion refleje como se mueven las metricas dentro de esa persona.
     for _, ventanas in df.groupby("participant_id"):
+        # Con pocas ventanas la correlacion es inestable y ensuciaria el
+        # promedio, asi que ese participante no se usa.
         if len(ventanas) < MINIMO_VENTANAS:
             continue
+
+        # Matriz de correlacion de Pearson entre todas las metricas, usando
+        # las ventanas de este participante como observaciones.
         r = ventanas[columnas].corr(method="pearson")
 
-        # Transformacion z de Fisher. Se recortan los valores exactamente en
-        # +-1 porque arctanh diverge ahi; pasa cuando dos metricas son
-        # linealmente dependientes dentro de un participante.
+        # Transformacion z de Fisher antes de promediar. Se recortan los
+        # valores exactamente en +-1 porque arctanh diverge ahi; eso pasa
+        # cuando dos metricas son linealmente dependientes, como rMSSD y SD1.
         acumulador.append(np.arctanh(np.clip(r.to_numpy(), -0.9999, 0.9999)))
 
     if not acumulador:
         raise SystemExit("Ningun participante tiene suficientes ventanas.")
 
+    # Se apilan las matrices de todos los participantes y se promedian celda
+    # por celda, todavia en el espacio z.
     promedio_z = np.nanmean(np.stack(acumulador), axis=0)
+
+    # Vuelta al espacio de correlaciones con la tangente hiperbolica, que es
+    # la inversa de arctanh.
     promedio_r = np.tanh(promedio_z)
+
+    # El recorte de +-0.9999 deja la diagonal en 0.9999 en vez de 1; se
+    # restituye para que la matriz se lea bien.
     np.fill_diagonal(promedio_r, 1.0)
 
     return pd.DataFrame(promedio_r, index=columnas, columns=columnas), len(acumulador)
@@ -102,14 +117,32 @@ def agrupar(matriz):
     Se usa 1 - |r| como distancia: dos metricas que se mueven juntas, en el
     mismo sentido o en el contrario, aportan la misma informacion.
     """
+    # Se pasa de correlacion a distancia. Se toma el valor absoluto porque dos
+    # metricas que se mueven en sentidos opuestos (r = -1) son igual de
+    # redundantes que dos que se mueven juntas (r = +1): una se deduce de la
+    # otra. Asi, |r| = 1 da distancia 0 y |r| = 0 da distancia 1.
     distancia = 1 - matriz.abs().to_numpy()
+
+    # La distancia de una metrica consigo misma es cero por definicion.
     np.fill_diagonal(distancia, 0.0)
-    # squareform exige simetria exacta; el promedio puede dejar diferencias
-    # minimas de redondeo.
+
+    # squareform exige simetria exacta, y el promedio entre participantes
+    # puede dejar diferencias minimas de redondeo entre la celda (i,j) y la
+    # (j,i). Se promedian para forzar la simetria.
     distancia = (distancia + distancia.T) / 2
 
+    # Agrupamiento jerarquico. El metodo "average" fusiona grupos segun la
+    # distancia media entre sus miembros, que es lo razonable aca: evita que
+    # un unico par muy parecido arrastre a todo un grupo.
     enlace = linkage(squareform(distancia, checks=False), method="average")
+
+    # Se corta el arbol a la altura que corresponde al umbral de redundancia:
+    # con UMBRAL_FAMILIA = 0.80, se corta en distancia 0.20, de modo que
+    # quedan juntas las metricas con |r| por encima de 0.80.
     etiquetas = fcluster(enlace, t=1 - UMBRAL_FAMILIA, criterion="distance")
+
+    # Orden en que el agrupamiento deja las metricas. Sirve para dibujar la
+    # matriz con las familias contiguas y que los bloques se vean.
     orden = leaves_list(enlace)
 
     return etiquetas, [matriz.columns[i] for i in orden]
@@ -157,12 +190,17 @@ def main() -> int:
         return 1
 
     df = pd.read_csv(archivo)
+
+    # Solo las ventanas validas del analisis principal. Las de 10 s se
+    # excluyen porque en ellas la mayoria de las metricas no se calcula.
     df = df[df.valida & (df.window_duration_s == DURACION)]
 
-    # Se excluyen las metricas sin variacion util para este analisis.
+    # Se excluyen las metricas que quedaron vacias o constantes: sin
+    # variacion no se puede calcular una correlacion.
     columnas = [m for m in METRICAS if df[m].notna().sum() > 0
                 and df[m].std() > 0]
 
+    # Matriz promediada entre participantes, y familias que surgen de ella.
     matriz, n_participantes = matriz_promedio(df, columnas)
     familias, orden = agrupar(matriz)
 
@@ -182,6 +220,9 @@ def main() -> int:
           f"{tabla_familias.familia.nunique()} grupos independientes.")
 
     print("\n=== pares mas redundantes ===")
+    # np.triu con k=1 se queda con el triangulo superior sin la diagonal, de
+    # modo que cada par aparezca una sola vez y no se cuente la correlacion
+    # de cada metrica consigo misma.
     pares = (matriz.where(np.triu(np.ones(matriz.shape), 1).astype(bool))
              .stack().abs().sort_values(ascending=False).head(6))
     for (a, b), r in pares.items():
