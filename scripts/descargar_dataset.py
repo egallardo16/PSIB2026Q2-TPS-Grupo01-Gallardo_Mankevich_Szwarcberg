@@ -1,4 +1,14 @@
-"""Descarga el dataset de ECG desde PhysioNet a la carpeta data/raw/.
+"""descargar_dataset.py -- TRAE LOS DATOS de PhysioNet a tu computadora.
+
+    QUE HACE : descarga el ECG y las marcas de eventos de los participantes.
+    ENTRA    : nada (se conecta a PhysioNet)
+    SALE     : data/raw/VPxx/BitalinoECG.txt y data/raw/VPxx/Triggers.txt
+    CORRER   : python scripts/descargar_dataset.py       (~375 MB, varios min)
+               python scripts/descargar_dataset.py --solo-triggers   (24 KB)
+
+--------------------------------------------------------------------------
+
+Descarga el dataset de ECG desde PhysioNet a la carpeta data/raw/.
 
 El dataset pesa alrededor de 375 MB, por lo que no se versiona en el
 repositorio: se baja con este script. Los cinco registros que estan en

@@ -108,10 +108,18 @@ def clasificar_ectopicos(picos_R, fs, ventana=11, umbral_corto=0.85, umbral_larg
     rr = calcular_serie_rr(picos_R, fs)
 
     # RR normalizado por el ritmo local (comparable entre estrés y relajación)
-    #rr_n = rr / median_filter(rr, size=ventana, mode="nearest")
+    # Esta línea estaba comentada y el K-means se hacía sobre los RR absolutos,
+    # en segundos. Como umbral_corto y umbral_largo son proporciones respecto
+    # del ritmo local (0.85 y 1.15), y los RR rondan los 0.8 s, la validación
+    # de más abajo nunca se cumplía y la función devolvía siempre 0 ectópicos.
+    # Al normalizar, los valores quedan alrededor de 1 y los umbrales aplican.
+    rr_n = rr / median_filter(rr, size=ventana, mode="nearest")
 
-    # Para cada latido: RR que lo precede y RR que lo sigue
-    X = np.column_stack([rr[:-1], rr[1:]])
+    # Para cada latido: RR normalizado que lo precede y RR normalizado que lo sigue.
+    # Un latido ectópico aparece antes de tiempo (RR previo corto) y es seguido
+    # por una pausa compensatoria (RR posterior largo), así que en este plano
+    # los ectópicos caen en una zona distinta a la de los latidos normales.
+    X = np.column_stack([rr_n[:-1], rr_n[1:]])
     latidos = picos_R[1:-1]
 
     km = KMeans(n_clusters=2, n_init=10, random_state=0).fit(X)
