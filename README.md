@@ -91,31 +91,100 @@ registros de `registros/` están incluidos en el repositorio como muestra.
 ├── modulos/
 │   ├── preprocesamiento.py     # carga de los registros y filtro pasabanda
 │   ├── procesamiento.py        # Pan-Tompkins, detección de QRS, serie RR, latidos ectópicos
+│   ├── eventos.py              # marcas temporales del protocolo, desde Triggers.txt
+│   ├── intervalos.py           # serie NN: criterios de validez y descarte de artefactos
 │   └── visualizacion.py        # gráficos de ECG, tacograma y correlación de latidos
 ├── probar_funciones.py         # script de prueba manual de las funciones de modulos/
 ├── scripts/
-│   └── descargar_dataset.py    # descarga del dataset desde PhysioNet
+│   ├── descargar_dataset.py    # descarga del dataset desde PhysioNet
+│   ├── procesar_registros.py   # pipeline completo sobre los 57 registros
+│   └── generar_figuras.py      # figuras del procesamiento para el informe
 ├── registros/                  # 5 registros de muestra, versionados
-└── data/raw/                   # dataset completo (no versionado, se descarga)
+├── results/figures/            # figuras generadas, versionadas
+└── data/                       # datos crudos y procesados (no versionado)
+    ├── raw/                    # dataset descargado de PhysioNet
+    └── processed/              # salidas de procesar_registros.py
 ```
 
+Cada módulo y script arranca con un encabezado que indica qué hace, qué recibe
+y qué produce.
+
 ## Cómo correr
+
+Todo se ejecuta **desde la raíz del repositorio**, porque las rutas son
+relativas a ella.
+
+**1. Procesar los registros.** Es el paso principal: carga cada ECG, lo filtra,
+detecta los complejos QRS, arma la serie RR y la convierte en serie NN.
+
+```bash
+~/.venvs/psib-tps/bin/python scripts/procesar_registros.py
+
+# o un subconjunto, para probar
+~/.venvs/psib-tps/bin/python scripts/procesar_registros.py --sujetos VP03 VP06
+```
+
+Deja en `data/processed/`:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `intervalos.csv` | series RR y NN de cada participante, con marca de calidad por intervalo |
+| `eventos.csv` | eventos del protocolo, en segundos desde el inicio de cada registro |
+| `calidad_deteccion.csv` | indicadores de la detección por participante |
+| `picos/VPxx.npy` | posiciones de las ondas R, para no repetir la detección |
+
+**2. Generar las figuras** del procesamiento en `results/figures/`:
+
+```bash
+~/.venvs/psib-tps/bin/python scripts/generar_figuras.py
+```
+
+**Inspeccionar un participante.** Los módulos se pueden ejecutar sueltos para
+ver qué producen:
+
+```bash
+~/.venvs/psib-tps/bin/python modulos/eventos.py VP03      # eventos del protocolo
+~/.venvs/psib-tps/bin/python modulos/intervalos.py VP12   # intervalos y descartes
+```
 
 **Notebook exploratorio.** Abrir `Exploratorio.ipynb` y seleccionar el kernel
 `Python (psib-tps)`. Funciona con los registros de muestra, sin descargar nada.
 
-**Pipeline de procesamiento.** Desde la raíz del repositorio:
+**Pruebas manuales de Emanuel.** `probar_funciones.py` carga un registro de
+`registros/`, lo procesa y grafica la señal cruda, la filtrada, la procesada, el
+tacograma y la correlación de cada latido con su plantilla local.
 
-```bash
-~/.venvs/psib-tps/bin/python probar_funciones.py
-```
+## Procesamiento de la señal
 
-Carga un registro, le aplica el filtro pasabanda, detecta los complejos QRS con
-Pan-Tompkins y grafica la señal cruda, la filtrada, la procesada, el tacograma y
-la correlación de cada latido con su plantilla local.
+1. **Filtrado.** Pasabanda Butterworth de orden 3 entre 0,5 y 40 Hz, aplicado
+   hacia adelante y hacia atrás para no introducir desfasaje.
+2. **Detección de QRS.** Pan-Tompkins: pasabanda 5–15 Hz, derivador, cuadrado,
+   media móvil de 150 ms y umbralizado adaptativo con discriminación de onda T.
+3. **Serie NN.** Se descartan los intervalos que no pueden corresponder a
+   latidos reales, según dos criterios tomados de la bibliografía:
+   - rango fisiológico de 300 a 2000 ms, equivalente a 30–200 lpm
+     ([Task Force ESC/NASPE, 1996](https://doi.org/10.1161/01.CIR.93.5.1043),
+     *Circulation* 93:1043–1065);
+   - variación máxima del 20 % respecto del intervalo anterior (criterio de Malik).
 
-> Las rutas de `modulos/preprocesamiento.py` son relativas, así que los scripts
-> se tienen que ejecutar **desde la raíz del repositorio**.
+   Los intervalos inválidos se **descartan y no se interpolan**: interpolar
+   introduce valores intermedios que reducen artificialmente las métricas
+   basadas en diferencias sucesivas, como rMSSD y pNN50.
+
+### Resultados del procesamiento
+
+Sobre los 57 participantes: **182 496 intervalos**, de los cuales se descarta el
+**2,36 %** (1122 por rango fisiológico y 3194 por salto brusco).
+
+- **No se detectaron latidos ectópicos** en ninguno de los registros, lo que es
+  esperable en una muestra de adultos jóvenes sanos. El control se realizó con
+  agrupamiento K-means sobre los intervalos RR normalizados por el ritmo local.
+- La principal fuente de intervalos inválidos resultaron ser **falsos positivos
+  de detección**, en su mayoría artefactos de movimiento que el detector marca
+  como complejos QRS. La figura `04_falso_positivo.png` muestra un caso en el
+  que un intervalo de unos 750 ms queda partido en dos de 490 y 260 ms.
+- Solo dos participantes superan el 5 % de intervalos descartados: **VP70**
+  (59,7 %) y **VP23** (8,3 %).
 
 ## Notas sobre los datos
 
@@ -134,3 +203,5 @@ la correlación de cada latido con su plantilla local.
   biofeedback respiratorio antes del reposo. En Group2 y Group4, 38 de 39
   participantes tienen un evento de biofeedback inmediatamente previo, lo que
   hay que tener en cuenta si se usa el reposo como línea de base.
+- Group3 es además el grupo con mejor calidad de señal: descarta en promedio el
+  0,85 % de los intervalos y ninguno de sus 18 participantes supera el 5 %.
