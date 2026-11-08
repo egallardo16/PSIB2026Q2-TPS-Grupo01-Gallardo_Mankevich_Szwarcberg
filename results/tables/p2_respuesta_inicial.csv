@@ -1,0 +1,2 @@
+medida,mediana,aceleran,frenan,n,test,estadistico,p,diferencia,ic95_inf,ic95_sup,efecto,t_estadistico,t_p,t_diferencia,t_ic95_inf,t_ic95_sup,t_efecto,significativo,t_significativo,coinciden
+respuesta_inicial_lpm,-0.07,8,9,18,Wilcoxon,64.5,0.5699420417262624,-0.17,-1.085,0.6399999999999999,-0.1568627450980392,-0.7226519586422859,0.4797182757247051,-0.3133333333333333,-1.228124388439764,0.6014577217730974,-0.17033070013123364,False,False,True
