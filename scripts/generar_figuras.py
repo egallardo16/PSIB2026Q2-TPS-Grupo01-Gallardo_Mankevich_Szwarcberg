@@ -43,12 +43,18 @@ ARTEFACTO_INICIO, ARTEFACTO_FIN = 234, 242
 
 
 def cargar_ecg(codigo):
+    """Señal de ECG cruda de un participante, en mV."""
+    # usecols evita cargar en memoria las columnas de timestamp y etiqueta,
+    # que aca no se usan: son ~2 millones de filas por archivo.
     df = pd.read_csv(CRUDO / codigo / "BitalinoECG.txt", sep="\t", header=None,
                      names=["voltaje", "tiempo", "raw"], usecols=["voltaje"])
+    # coerce + dropna descartan cualquier valor no numerico suelto.
     return pd.to_numeric(df["voltaje"], errors="coerce").dropna().to_numpy()
 
 
 def cargar_picos(codigo):
+    """Posiciones de las ondas R ya detectadas por procesar_registros.py."""
+    # Se leen de disco en vez de volver a correr Pan-Tompkins sobre la señal.
     return np.load(PROCESADO / "picos" / f"{codigo}.npy")
 
 
@@ -57,6 +63,9 @@ def fig_crudo_vs_filtrado():
     ecg = cargar_ecg(EJEMPLO)
     filtrado = filtroPB(FS, ecg)
 
+    # Se grafica solo un tramo corto: con 34 minutos de señal no se
+    # distinguiria la morfologia de los latidos. El indice de muestra es el
+    # segundo multiplicado por la frecuencia de muestreo.
     i0, i1 = EJEMPLO_INICIO * FS, EJEMPLO_FIN * FS
     t = np.arange(i0, i1) / FS
 
@@ -84,6 +93,9 @@ def fig_qrs_detectados():
 
     i0, i1 = EJEMPLO_INICIO * FS, EJEMPLO_FIN * FS
     t = np.arange(i0, i1) / FS
+
+    # De todos los picos R del registro, solo los que caen en el tramo que se
+    # esta dibujando.
     en_tramo = picos[(picos >= i0) & (picos < i1)]
 
     fig, ax = plt.subplots(figsize=(11, 4))
@@ -103,6 +115,9 @@ def fig_tacogramas():
     """Tacograma RR frente a tacograma NN, marcando los intervalos descartados."""
     tabla = construir_intervalos(cargar_picos(EJEMPLO_ARTEFACTO), FS,
                                  EJEMPLO_ARTEFACTO)
+
+    # Mascara de los intervalos que no pasaron los criterios de validez.
+    # Se usa para marcarlos en rojo sobre el tacograma RR.
     descartados = tabla.quality_flag != FLAG_OK
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 6), sharex=True, sharey=True)
@@ -181,9 +196,15 @@ def fig_falso_positivo():
 def fig_calidad_cohorte():
     """Porcentaje de intervalos descartados en cada participante, por grupo."""
     df = pd.read_csv(PROCESADO / "calidad_deteccion.csv")
+
+    # subject_groups.csv trae una columna por grupo con los codigos adentro.
+    # Se lo da vuelta a un diccionario participante -> grupo para poder
+    # colorear cada barra.
     grupos = pd.read_csv(CRUDO / "subject_groups.csv")
     de_grupo = {vp: col for col in grupos.columns for vp in grupos[col].dropna()}
     df["grupo"] = df.participante.map(de_grupo)
+
+    # Ordenado por grupo y, dentro de cada grupo, de mejor a peor calidad.
     df = df.sort_values(["grupo", "pct_descartado"])
 
     colores = {"Group2": "tab:orange", "Group3": "tab:green", "Group4": "tab:red"}
@@ -214,7 +235,74 @@ def fig_calidad_cohorte():
     return fig, "05_calidad_cohorte.png"
 
 
+def fig_habituacion():
+    """Evolucion de la respuesta cardiaca a lo largo de los 16 videos.
+
+    Es el control del principal problema de interpretacion del trabajo: el
+    reposo que se usa como referencia esta al final del experimento, asi que
+    una diferencia contra el podria deberse al paso del tiempo y no a los
+    estimulos. Si fuera asi, deberia verse una tendencia sostenida a lo largo
+    de los videos, que es lo que esta figura permite mirar.
+
+    Cada participante se centra en su propio promedio antes de graficarlo.
+    Sin centrar, la distancia entre personas (hay quien tiene 70 lpm y quien
+    tiene 100) taparia por completo la tendencia, que es lo que interesa.
+    """
+    tabla = pd.read_csv(RAIZ / "data" / "features" / "metricas.csv")
+    videos = tabla[(tabla.condition == "exposicion") &
+                   (tabla.window_duration_s == 60) & tabla.valida]
+
+    # Dos metricas: el nivel de pulso y la variabilidad de corto plazo, que
+    # son las representantes de dos de las familias de metricas.
+    paneles = [("Nmean", "Frecuencia cardíaca [lpm]", "tab:red"),
+               ("rMSSD", "rMSSD [ms]", "tab:blue")]
+
+    fig, ejes = plt.subplots(1, 2, figsize=(13, 5))
+
+    for ax, (metrica, etiqueta, color) in zip(ejes, paneles):
+        centradas = []
+
+        for _, suyas in videos.groupby("participant_id"):
+            suyas = suyas.sort_values("exposure_order")
+            datos = suyas[["exposure_order", metrica]].dropna()
+            if len(datos) < 8:
+                continue
+
+            # Se le resta a cada persona su propio promedio, para que todas
+            # arranquen alrededor de cero y se puedan comparar las tendencias.
+            y = datos[metrica] - datos[metrica].mean()
+            ax.plot(datos.exposure_order, y, color="gray", alpha=0.35,
+                    linewidth=0.9)
+            centradas.append(pd.Series(y.to_numpy(),
+                                       index=datos.exposure_order.to_numpy()))
+
+        # Promedio de todos los participantes en cada posicion de la serie.
+        promedio = pd.concat(centradas, axis=1).mean(axis=1).sort_index()
+        ax.plot(promedio.index, promedio.to_numpy(), color=color, linewidth=3,
+                label="promedio de los 18")
+
+        # Recta ajustada al promedio, para cuantificar la tendencia.
+        recta = np.polyfit(promedio.index, promedio.to_numpy(), 1)
+        ax.plot(promedio.index, np.polyval(recta, promedio.index), "--",
+                color="black", linewidth=1.5,
+                label=f"tendencia: {recta[0]:+.2f} por video")
+
+        ax.axhline(0, color="k", linewidth=0.8, alpha=0.4)
+        ax.set_xlabel("Orden de exposición al video")
+        ax.set_ylabel(f"{etiqueta}\n(centrado en cada participante)")
+        ax.set_title(metrica)
+        ax.set_xticks(range(1, 17))
+        ax.legend(fontsize=9)
+        ax.grid(alpha=0.3)
+
+    fig.suptitle("Evolución de la respuesta cardíaca a lo largo de los 16 videos\n"
+                 "Cada línea gris es un participante", fontsize=12)
+    fig.tight_layout()
+    return fig, "08_habituacion.png"
+
+
 def main() -> int:
+    """Genera todas las figuras y las guarda en results/figures/."""
     if not (PROCESADO / "picos").exists():
         print("Faltan los picos R. Correr antes: python scripts/procesar_registros.py")
         return 1
@@ -223,7 +311,7 @@ def main() -> int:
 
     for constructor in (fig_crudo_vs_filtrado, fig_qrs_detectados,
                         fig_tacogramas, fig_falso_positivo,
-                        fig_calidad_cohorte):
+                        fig_calidad_cohorte, fig_habituacion):
         fig, nombre = constructor()
         fig.savefig(FIGURAS / nombre, dpi=150, bbox_inches="tight")
         plt.close(fig)

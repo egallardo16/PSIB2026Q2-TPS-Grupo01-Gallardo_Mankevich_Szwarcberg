@@ -1,0 +1,15 @@
+metrica,familia,representante
+Nmean,1,True
+avNN,1,False
+CVNN,2,False
+SD2,2,False
+SDNN,2,True
+std,2,False
+NFD,3,False
+NN50,3,False
+NSD,3,False
+SD1,3,False
+pNN50,3,False
+rMSSD,3,True
+pNN20,4,True
+HRV_ihmig,5,True

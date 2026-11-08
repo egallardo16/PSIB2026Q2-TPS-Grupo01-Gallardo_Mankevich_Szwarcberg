@@ -98,6 +98,7 @@ def tamano_legible(bytes_: int) -> str:
 
 
 def main() -> int:
+    """Descarga los archivos pedidos, salteando los que ya estan en disco."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--solo-triggers", action="store_true",
                     help="baja unicamente los Triggers.txt (24 KB en total)")
