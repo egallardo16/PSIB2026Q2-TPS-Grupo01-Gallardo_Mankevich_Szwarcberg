@@ -102,6 +102,10 @@ def cargar_metricas(): #Lee metricas.csv: una fila por ventana, con todas sus me
     return pd.read_csv(CARACTERISTICAS / "metricas.csv")
 
 
+def cargar_derivadas(): #Lee derivadas.csv: una fila por participante (delta HR y respuesta inicial).
+    return pd.read_csv(CARACTERISTICAS / "derivadas.csv")
+
+
 def metricas_representantes():
     familias = pd.read_csv(TABLAS / "familias_metricas.csv")
     return familias.loc[familias.representante, "metrica"].tolist()
@@ -376,17 +380,38 @@ def p1_exposicion_vs_reposo(metricas, lista_metricas=None, duracion_s=60,
 
 
 #P2. ¿El pulso cambia apenas empieza cada video?
+#   - Dato de entrada: derivadas.csv, columna respuesta_inicial_lpm. Para cada
+#     participante es el promedio sobre sus 16 videos de
+#         HR(primeros 10 s del video) - HR(10 s previos al video).
+#   - Test: test_vs_cero (Wilcoxon contra 0, con la t como sensibilidad).
+#     Es un solo test, asi que no hace falta corregir con Holm.
+#   - Como leerlo:
+#       respuesta > 0 -> el pulso se acelera al aparecer la araña
+#                        (respuesta defensiva; Hare & Blevings, 1975)
+#       respuesta < 0 -> el pulso se frena (respuesta de orientacion o atencion)
+#       p >= 0.05     -> no hay una respuesta inicial consistente entre personas
+#   - Limitacion: los triggers tienen resolucion de 1 s y el eje temporal del
+#     ECG puede correrse hasta ~3 s respecto del reloj, asi que los dos tramos
+#     de 10 s pueden quedar algo corridos respecto del inicio real del video.
+#   Devuelve una tabla de una fila con el resultado del test y cuantas
+#   personas aceleran y cuantas frenan.
 def p2_respuesta_inicial(derivadas):
+    respuesta = derivadas["respuesta_inicial_lpm"].dropna()
 
-    # PENDIENTE. Idea:
-    #   - derivadas.csv ya tiene una columna respuesta_inicial_lpm: para cada
-    #     participante, el promedio sobre los 16 videos de
-    #     HR(primeros 10 s del video) - HR(10 s previos).
-    #   - Aplicar test_vs_cero sobre esa columna.
-    #   - Respuesta > 0 significa aceleracion (respuesta defensiva, Hare &
-    #     Blevings, 1975); < 0, desaceleracion (respuesta de orientacion).
-    
-    raise NotImplementedError
+    fila = {
+        "medida": "respuesta_inicial_lpm",
+        # Descriptivos: hacia donde va la respuesta y si es pareja entre personas.
+        "mediana": respuesta.median(),
+        "aceleran": int((respuesta > 0).sum()),
+        "frenan": int((respuesta < 0).sum()),
+    }
+    fila.update(test_vs_cero(respuesta))
+
+    tabla = pd.DataFrame([fila])
+    tabla["significativo"] = tabla.p < ALFA
+    tabla["t_significativo"] = tabla.t_p < ALFA
+    tabla["coinciden"] = tabla.significativo == tabla.t_significativo
+    return tabla
 
 #P3a. ¿La respuesta baja a lo largo de los 16 videos?
 def p3a_habituacion_entre_videos(habituacion):
@@ -448,3 +473,15 @@ if __name__ == "__main__":
     p1_sin_vp03 = p1_exposicion_vs_reposo(metricas, excluir=["VP03"])
     print("\nSensibilidad: P1 sin VP03 (Wilcoxon)\n")
     print(p1_sin_vp03[principal].round(4).to_string(index=False))
+
+    # --- P2: respuesta inicial al empezar cada video ---
+    p2 = p2_respuesta_inicial(cargar_derivadas())
+    print("\n" + "=" * 70)
+    print("P2. Respuesta inicial: HR(primeros 10 s) - HR(10 s previos), por persona")
+    print("    Wilcoxon contra 0 (diferencia = Hodges-Lehmann); t como sensibilidad\n")
+    print(p2[["n", "mediana", "aceleran", "frenan", "diferencia", "ic95_inf",
+              "ic95_sup", "efecto", "p", "significativo",
+              "t_p", "coinciden"]].round(4).to_string(index=False))
+
+    p2.to_csv(TABLAS / "p2_respuesta_inicial.csv", index=False)
+    print(f"\nGuardado en results/tables/p2_respuesta_inicial.csv")

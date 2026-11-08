@@ -131,7 +131,15 @@ Las 14 métricas no miden 14 cosas distintas. Por ejemplo, SD1 y rMSSD son casi 
 
 **Ojo al leer la tabla:** las medianas de cada condición por separado no son el efecto. En rMSSD las medianas de videos y reposo son casi iguales (30,3 y 30,5 ms), pero dentro de cada persona el rMSSD baja unos 5 ms en los videos. Las diferencias entre personas tapan el cambio. Por eso el efecto se lee en `diferencia`, que compara a cada persona contra sí misma.
 
-**P2** (resultado preliminar): no hay una respuesta inicial clara (p = 0,57).
+**P2. Respuesta inicial** (n = 18):
+
+| Mediana | Aceleran / frenan | Cambio (HL) | IC 95 % | r | p (Wilcoxon) | p (t) |
+|---|---|---|---|---|---|---|
+| −0,07 lpm | 8 / 9 | −0,17 lpm | −1,1 a 0,6 | −0,16 | 0,57 | 0,48 |
+
+No hay una respuesta consistente al empezar el video: la mitad de las personas acelera y la otra mitad frena, y el cambio típico es menor a 1 lpm. La t da lo mismo. Tampoco cambia de forma clara entre los primeros y los últimos videos.
+
+Una posible razón: los triggers tienen resolución de 1 s y el eje temporal del ECG puede correrse hasta unos 3 s, así que los tramos de 10 s antes y después del inicio pueden quedar algo corridos. Una respuesta muy rápida, de pocos segundos, podría no verse.
 
 **P3a** (resultado preliminar, todavía sin Holm): **hay un cambio muy marcado a lo largo de los 16 videos.**
 
@@ -154,19 +162,34 @@ El pulso baja y la variabilidad sube video a video: la activación es alta al pr
 
 Esta comparación es exploratoria: la armamos después de ver la habituación, así que no reemplaza a P1 y hay que presentarla como tal.
 
-**Conclusión principal hasta ahora:**
-- Los videos sí generan más activación cardíaca: pulso más alto y variabilidad más baja.
-- La respuesta es fuerte al principio y se apaga a lo largo de la sesión. Hacia el final ya no se distingue del reposo.
-- Por eso, promediando los 16 videos (P1), el efecto se diluye y no llega a ser significativo.
-
-**Límite:** con este diseño no se puede separar si la respuesta baja porque la persona se acostumbra a las arañas (habituación al estímulo) o simplemente porque se relaja con el paso del tiempo. El reposo está al final y no hay una medición antes de los videos.
-
 **P3b:** pendiente.
+
+## Conclusiones
+
+*Se actualizan a medida que se completan P3a y P3b.*
+
+**Lo que muestran los datos**
+
+1. **Los videos de arañas aumentan la activación cardíaca, pero sobre todo al principio.** En los primeros videos el pulso está unos 4 lpm por encima del reposo y la variabilidad (SDNN, rMSSD) es claramente menor. Es la respuesta esperable ante un estímulo que genera miedo.
+2. **Esa activación se apaga a lo largo de la sesión.** Del primer al último video el pulso baja unos 5 lpm y la variabilidad sube, en 15 o 16 de las 18 personas. Hacia el final ya no se distingue del reposo.
+3. **Por eso, tomando los 16 videos juntos, no hay diferencia significativa con el reposo (P1).** La dirección es la esperada y los efectos son medianos a grandes, pero al promediar los primeros videos (muy activados) con los últimos (ya tranquilos), el efecto se diluye. Con 18 personas, además, falta poder para detectarlo.
+4. **No hay una respuesta consistente en los primeros segundos de cada video (P2).** La mitad de las personas acelera y la otra mitad frena. Puede que la respuesta sea muy rápida para verla con triggers de 1 s de resolución.
+
+**Qué tan firmes son estos resultados**
+
+- No dependen del test elegido: Wilcoxon y la t llegan a la misma conclusión en todas las comparaciones.
+- No dependen de VP03: sacarlo, por su reposo incompleto, no cambia nada.
+- La comparación primeros vs últimos videos contra el reposo es exploratoria, porque la armamos después de ver la habituación. Sirve para explicar P1, no para reemplazarlo.
+
+**Qué no podemos afirmar**
+
+- **No sabemos si la respuesta baja porque se acostumbran a las arañas o porque se relajan con el tiempo.** El reposo está al final y no hay una medición antes de los videos, así que el diseño no permite separar las dos cosas.
+- **Los resultados valen para Group3** (18 personas sin entrenamiento de biofeedback). No se pueden extender a los otros grupos sin analizarlos.
+- **El ECG no diagnostica ansiedad.** Lo que mostramos son cambios en la actividad cardíaca entre condiciones, compatibles con más activación durante la exposición.
 
 ## Cosas abiertas
 
 - **Video de demostración como referencia previa.** Es lo único que se grabó antes de los clips de arañas. Si su contenido es neutro, podría servir como una línea de base anterior a la exposición y ayudar a separar habituación de paso del tiempo. Hay que confirmar en el protocolo qué muestra ese video.
-
 - **HRV (Ihmig) en la familia principal.** Mide tendencia y no variabilidad. Podríamos testear solo 4 métricas en P1 y reportarla aparte como exploratoria.
 - **Criterio del 20 % para descartar intervalos.** En algunos participantes descarta latidos normales: cambios del pulso con la respiración, no errores de detección. Eso puede bajar un poco rMSSD y SDNN. Una alternativa es comparar cada intervalo contra la mediana de los latidos cercanos (Lipponen & Tarvainen, 2019).
 - **Comparación entre grupos** (Kruskal-Wallis). Con solo Group3 no se puede hacer; habría que calcular las métricas para los 57 participantes.
