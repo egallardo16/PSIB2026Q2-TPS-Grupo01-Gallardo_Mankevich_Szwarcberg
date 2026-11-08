@@ -1,6 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+<<<<<<< Updated upstream
+=======
+
+def _mostrar_o_guardar(fig, guardar):
+    """Muestra la figura en pantalla, o la guarda en disco si se indicó ruta."""
+    if guardar is None:
+        plt.show()
+    else:
+        fig.savefig(guardar, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
+>>>>>>> Stashed changes
 def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
                  picos=None, titulo="ECG"):
     """
@@ -10,6 +23,11 @@ def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
     t_fin  : fin del tramo [s] (None = hasta el final)
     color  : color de la señal (nombre, hex o código de matplotlib)
     picos  : (opcional) índices de muestra de las R para marcarlas
+<<<<<<< Updated upstream
+=======
+    guardar: (opcional) ruta donde guardar la figura. Si es None, se muestra
+             en pantalla.
+>>>>>>> Stashed changes
     """
     ecg = np.asarray(ecg)
     t_total = len(ecg) / fs
@@ -47,6 +65,11 @@ def graficar_tacograma(picos_R, fs, t_ini=0, t_fin=None, color="tab:blue",
     t_fin   : fin del tramo [s] (None = hasta el final)
     color   : color del gráfico
     en_ms   : True = RR en milisegundos, False = en segundos
+<<<<<<< Updated upstream
+=======
+    guardar : (opcional) ruta donde guardar la figura. Si es None, se muestra
+              en pantalla.
+>>>>>>> Stashed changes
     """
     picos_R = np.sort(np.asarray(picos_R, dtype=int))
     if len(picos_R) < 2:
@@ -82,6 +105,11 @@ def graficar_correlacion(validos, corr, fs, t_ini=0, t_fin=None, color="tab:blue
     color   : color del gráfico
     umbral  : (opcional) valor de corte. Se dibuja una línea y se marcan en rojo
               los latidos por debajo. Si es "auto", usa mediana - 4*MAD.
+<<<<<<< Updated upstream
+=======
+    guardar : (opcional) ruta donde guardar la figura. Si es None, se muestra
+              en pantalla.
+>>>>>>> Stashed changes
     """
     validos = np.asarray(validos, dtype=int)
     corr = np.asarray(corr, dtype=float)
