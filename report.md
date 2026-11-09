@@ -167,6 +167,7 @@ Todo se genera con `python modulos/estadisticas.py` y queda en `results/tables/`
 |---|---|
 | `p1_exposicion_vs_reposo.csv` | P1 |
 | `p2_respuesta_inicial.csv` | P2 |
+| `hr_antes_del_video.csv` | P2, complemento: HR antes del video vs reposo |
 | `p3a_pendientes.csv` | P3a, test de las pendientes |
 | `p3a_friedman.csv` | P3a, Friedman |
 | `p3b_dentro_del_video.csv` | P3b |
@@ -291,7 +292,13 @@ La t llega a la misma conclusión en las tres.
 
 La baja de la HR dentro del video aparece en los tres grupos, con un tamaño parecido (unos 2 lpm), y la t llega a lo mismo. En total son 56 personas. La figura `12_replicacion_por_grupo.png` muestra que en los tres la HR baja en los primeros 20 s y después se mantiene. En cambio, la baja de std no se repite en Group2 ni en Group4. rMSSD tampoco cambia de forma significativa con Wilcoxon. En Group2 la t sí marca una suba de rMSSD, pero como los dos tests no coinciden, no la tomamos como resultado. Lo único que se replica es la HR.
 
-**Un dato que cambia la lectura** (exploratorio): en los 10 s *antes* de cada video, la HR ya está unos 4 a 6 lpm por encima del reposo (media +4,1; mediana +5,6), en 13 de 18 personas. Es decir, la HR no sube cuando aparece la araña (por eso P2 no da nada): ya estaba alta antes. Puede ser anticipación del próximo video, o efecto de lo que hacían entre videos (responder preguntas sobre el video anterior). Con este diseño no podemos separar las dos cosas.
+**Un dato que cambia la lectura: la HR ya está alta antes del video** (exploratorio). Comparamos la HR de los 10 s previos a cada video (promedio de los 16 videos) con la HR del reposo de cada persona. Wilcoxon pareado, con la t como sensibilidad:
+
+| HR 10 s previos (mediana) | HR reposo (mediana) | Personas | Cambio (HL) | IC 95 % | r | p |
+|---|---|---|---|---|---|---|
+| 84,7 lpm | 77,7 lpm | 15 de 18 por encima | +4,5 lpm | 2,7 a 6,9 | 0,84 | **< 0,001** |
+
+La t llega a lo mismo. Es decir, la HR no sube cuando aparece la araña (por eso P2 no da nada): ya estaba alta antes. Puede ser anticipación del próximo video, o efecto de lo que hacían entre videos (responder preguntas sobre el video anterior). Con este diseño no podemos separar las dos cosas.
 
 ## Conclusiones
 
@@ -300,7 +307,7 @@ La baja de la HR dentro del video aparece en los tres grupos, con un tamaño par
 1. **Durante la sesión de videos hay más activación cardíaca que en el reposo, sobre todo al principio.** En los primeros videos la HR está unos 4 lpm por encima del reposo y la HRV (SDNN, rMSSD) es claramente menor (comparación exploratoria).
 2. **Esa activación es menor en la segunda mitad de la sesión (P3a).** Del primer al último video la HR baja unos 5 lpm y la HRV sube, en 15 o 16 de las 18 personas. Es significativo después de Holm. Hacia el final ya no se distingue del reposo. Pero el cambio se concentra en el paso de la mitad 1 a la mitad 2, más que en una baja gradual video a video.
 3. **Y también se apaga dentro de cada video (P3b).** La HR arranca alta y en unos 20 s baja unos 2 lpm; en Group3 eso la deja en el nivel del reposo. Pasa en las 18 personas de Group3 y se repite en Group2 y Group4: en total, en 50 de 56 personas. Es el resultado más sólido del trabajo.
-4. **La HR no sube cuando aparece la araña (P2): ya estaba alta antes.** En los 10 s previos a cada video la HR ya está unos 4 a 6 lpm por encima del reposo (exploratorio). La activación parece empezar antes del video, no con él.
+4. **La HR no sube cuando aparece la araña (P2): ya estaba alta antes.** En los 10 s previos a cada video la HR ya está unos 4,5 lpm por encima del reposo, en 15 de las 18 personas (p < 0,001; exploratorio). La activación parece empezar antes del video, no con él.
 5. **Por eso, tomando los 16 videos completos, no hay diferencia significativa con el reposo (P1).** La dirección es la esperada y los efectos son medianos a grandes, pero al promediar los momentos activados con los ya tranquilos el efecto se diluye. Con 18 personas, además, falta poder para detectarlo.
 
 **En una frase:** la activación cardíaca es transitoria. Es máxima antes y al empezar cada video, se apaga en unos segundos (esto se repite en los tres grupos), y es menor en la segunda mitad de la sesión que en la primera.

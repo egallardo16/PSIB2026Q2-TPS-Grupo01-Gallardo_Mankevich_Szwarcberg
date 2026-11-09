@@ -179,6 +179,7 @@ los guarda en `results/tables/`:
 |---------|----------|
 | `p1_exposicion_vs_reposo.csv` | P1: videos vs reposo |
 | `p2_respuesta_inicial.csv` | P2: respuesta al empezar el video |
+| `hr_antes_del_video.csv` | P2, complemento: HR en los 10 s previos al video vs reposo |
 | `p3a_pendientes.csv`, `p3a_friedman.csv` | P3a: habituación a lo largo de los 16 videos |
 | `p3b_dentro_del_video.csv` | P3b: habituación dentro de cada video |
 | `p3b_replicacion.csv` | P3b repetido en Group2 y Group4 |
@@ -277,7 +278,7 @@ El detalle de cada decisión, con su justificación y referencias, está en
 | Pregunta | Resultado |
 |----------|-----------|
 | P1. ¿Difieren HR y HRV entre videos y reposo? | Dirección esperada (HR más alta, HRV más baja), pero no significativa tras Holm: el efecto se diluye al promediar los 16 videos |
-| P2. ¿Cambia la HR al empezar el video? | No: la HR ya estaba elevada antes de que empiece |
+| P2. ¿Cambia la HR al empezar el video? | No: la HR ya estaba elevada antes de que empiece (+4,5 lpm sobre el reposo en los 10 s previos, p < 0,001) |
 | P3a. ¿Cambia la respuesta a lo largo de los 16 videos? | Sí: la HR baja y la HRV sube (p Holm = 0,006), concentrado en el paso de la primera a la segunda mitad |
 | P3b. ¿Cambia la respuesta dentro de cada video? | Sí: la HR baja en los primeros ~20 s, en los 18 participantes (p Holm < 0,001). Se repite en Group2 (18 de 19) y Group4 (14 de 19) |
 

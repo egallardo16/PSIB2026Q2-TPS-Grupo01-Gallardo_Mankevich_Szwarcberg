@@ -19,6 +19,7 @@
 # Preguntas del trabajo
 # P1: ¿Difieren la frecuencia cardiaca y su variabilidad entre la exposicion a los videos y el reposo?
 # P2: ¿El pulso cambia apenas empieza cada video? (respuesta inicial)
+#       ¿la HR ya esta alta antes del video? --> hr_antes_del_video.csv
 # P3a:  ¿La respuesta baja a lo largo de los 16 videos? (habituacion)
 # P3b:  ¿La respuesta baja dentro de cada video?
 #       + replicacion de P3b en Group2 y Group4 --> p3b_replicacion.csv
@@ -416,22 +417,65 @@ def p2_respuesta_inicial(derivadas):
     tabla["coinciden"] = tabla.significativo == tabla.t_significativo
     return tabla
 
+
+#P2, complemento: ¿la HR ya esta alta ANTES de que empiece el video? 
+# - Por que: P2 no encuentra respuesta al empezar el video. Una explicacion es
+#   que la HR ya estaba alta antes, asi que no tiene para donde subir.
+# - Dato de entrada: la HR de los 10 s previos a cada video (respuesta_inicial,
+#   en ventanas.py), promediada sobre los 16 videos de cada persona, y la HR
+#   del reposo de esa persona (derivadas.csv).
+# - Test: Wilcoxon pareado (10 s previos vs reposo), t como sensibilidad.
+# - Como leerlo: diferencia > 0 y significativo -> la persona ya llega
+#   activada al video.
+# - Limitacion: esos 10 s caen en la pausa en la que responden preguntas sobre
+#   el video anterior. Hablar o moverse tambien sube la HR, asi que no se
+#   puede decir que sea miedo anticipado.
+#   Devuelve una tabla de una fila.
+def hr_antes_del_video_vs_reposo(derivadas):
+    from modulos.ventanas import respuesta_inicial
+
+    # HR de los 10 s previos: una fila por video -> un valor por persona.
+    previo = respuesta_inicial().groupby("participant_id").hr_previo_lpm.mean()
+    reposo = derivadas.set_index("participant_id").hr_reposo_lpm
+
+    # Se alinean por persona y se descartan las que no tienen las dos.
+    par = pd.concat([previo.rename("previo"), reposo.rename("reposo")], axis=1).dropna()
+
+    fila = {
+        "medida": "HR 10 s previos - HR reposo",
+        "mediana_previo": par.previo.median(),
+        "mediana_reposo": par.reposo.median(),
+        "por_encima": int((par.previo > par.reposo).sum()),
+        "por_debajo": int((par.previo < par.reposo).sum()),
+    }
+    fila.update(test_w_pareado(par.previo, par.reposo))   # principal
+    fila.update(test_t_pareado(par.previo, par.reposo))   # sensibilidad
+
+    tabla = pd.DataFrame([fila])
+    tabla["significativo"] = tabla.p < ALFA
+    tabla["t_significativo"] = tabla.t_p < ALFA
+    tabla["coinciden"] = tabla.significativo == tabla.t_significativo
+    return tabla
+
+
 # Traduce el signo de un cambio a "mas" o "menos activacion".
 # Hace falta porque el signo significa cosas opuestas segun la metrica:
-#   - en el pulso (Nmean, avNN), que BAJE es calmarse;
+#   - en la HR (Nmean), que BAJE es calmarse; en avNN (tiempo entre latidos), que SUBA;
 #   - en la variabilidad (SDNN, rMSSD, pNN20, std...), que SUBA es calmarse.
 # HRV_ihmig mide tendencia y no tiene una lectura de activacion clara.
 # std tampoco: en ventanas de 10 s refleja sobre todo cuanto se MUEVE el pulso
 # dentro de la ventana. Al empezar cada video el pulso esta bajando rapido, y
 # eso solo ya sube std en la primera ventana, sin que cambie la activacion.
+
 def _sentido(metrica, cambio):
-    if metrica in ("HRV_ihmig", "std") or pd.isna(cambio) or cambio == 0:
+    if metrica in ("HRV_ihmig", "std") or pd.isna(cambio) or cambio == 0: #cambio vacío o 0: no hay dirección que traducir. 
         return "-"
     if metrica == "avNN":                 # intervalo mas largo = pulso mas lento
         return "menos activacion" if cambio > 0 else "mas activacion"
     if metrica == "Nmean":
         return "menos activacion" if cambio < 0 else "mas activacion"
     return "menos activacion" if cambio > 0 else "mas activacion"
+
 
 
 #P3a. ¿La respuesta baja a lo largo de los 16 videos? (habituacion entre videos)
@@ -698,6 +742,17 @@ if __name__ == "__main__":
 
     p2.to_csv(TABLAS / "p2_respuesta_inicial.csv", index=False)
     print(f"\nGuardado en results/tables/p2_respuesta_inicial.csv")
+
+    # --- P2, complemento: HR en los 10 s previos al video vs reposo ---
+    antes = hr_antes_del_video_vs_reposo(cargar_derivadas())
+    print("\n")
+    print("P2, complemento (exploratorio): HR en los 10 s previos al video vs HR en reposo")
+    print("    Wilcoxon pareado (diferencia = Hodges-Lehmann, en lpm); t como sensibilidad\n")
+    print(antes[["n", "mediana_previo", "mediana_reposo", "por_encima", "por_debajo",
+                 "diferencia", "ic95_inf", "ic95_sup", "efecto", "p",
+                 "significativo", "t_p", "coinciden"]].round(4).to_string(index=False))
+    antes.to_csv(TABLAS / "hr_antes_del_video.csv", index=False)
+    print(f"\nGuardado en results/tables/hr_antes_del_video.csv")
 
     # --- P3a: habituacion a lo largo de los 16 videos ---
     p3a = p3a_habituacion_entre_videos(cargar_habituacion())
