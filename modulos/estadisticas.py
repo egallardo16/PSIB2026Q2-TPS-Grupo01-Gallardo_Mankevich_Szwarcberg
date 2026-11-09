@@ -21,6 +21,7 @@
 # P2: ¿El pulso cambia apenas empieza cada video? (respuesta inicial)
 # P3a:  ¿La respuesta baja a lo largo de los 16 videos? (habituacion)
 # P3b:  ¿La respuesta baja dentro de cada video?
+#       + replicacion de P3b en Group2 y Group4 --> p3b_replicacion.csv
 
 # Unidad de analisis: el participante
 # Cada participante aporta muchas ventanas (16 videos, mas las del reposo).
@@ -588,7 +589,72 @@ def p3b_habituacion_dentro_del_video(metricas, lista_metricas=METRICAS_P3B):
     return tabla
 
 
-#Si apretamos el botón para ejecutar, se core esto: 
+# 4. REPLICACION DE P3b EN LOS OTROS GRUPOS
+
+# P3b compara cada video consigo mismo (final vs inicio), asi que no necesita
+# el reposo. Por eso se puede repetir en Group2 y Group4, que en el resto del
+# trabajo quedan afuera porque hacen biofeedback antes del reposo.
+# Ojo: esos grupos tienen un biofeedback que dura toda la sesion de videos.
+# Solo se usan para esta comparacion dentro del video, nunca contra el reposo
+# ni para comparar niveles entre grupos. Es una replicacion exploratoria.
+GRUPOS = ["Group3", "Group2", "Group4"]
+
+
+#Función: devuelve la tabla de métricas de un grupo, igual que metricas.csv pero para el grupo que pidas. 
+def metricas_de_grupo(grupo):
+    if grupo == "Group3":
+        return cargar_metricas()
+
+    archivo = CARACTERISTICAS / f"metricas_{grupo.lower()}.csv"
+    if archivo.exists():
+        return pd.read_csv(archivo)
+
+    from modulos.ventanas import CRUDO, generar
+    grupos = pd.read_csv(CRUDO / "subject_groups.csv")
+    tabla = generar(sorted(grupos[grupo].dropna().tolist()))
+    tabla.to_csv(archivo, index=False)
+    return tabla
+
+
+# Le aplica P3b (la misma funcion que para Group3 antes, sin cambios) en cada grupo 
+# y junta los resultados en una tabla, con una columna "grupo". Holm se aplica dentro de
+# cada grupo, igual que en el analisis original.
+def p3b_replicacion(grupos=GRUPOS):
+    tablas = []
+    for grupo in grupos:
+        tabla = p3b_habituacion_dentro_del_video(metricas_de_grupo(grupo))
+        tabla.insert(0, "grupo", grupo)
+        tablas.append(tabla)
+    return pd.concat(tablas, ignore_index=True)
+
+
+# 5. IMPRIMIR LOS RESULTADOS EN PANTALLA
+
+# Deja solo las columnas que hacen falta para leer el resultado, con nombres
+# claros y el IC 95 % en una sola columna. El CSV guarda todas.
+def resumen_para_imprimir(tabla):
+    return pd.DataFrame({
+        "Metrica": tabla.metrica,
+        "n": tabla.n,
+        "Bajan / suben": tabla.bajan.astype(str) + " / " + tabla.suben.astype(str),
+        "Cambio (HL)": tabla.diferencia.map("{:+.2f}".format),
+        "IC 95 %": ("[" + tabla.ic95_inf.map("{:.2f}".format) + ", "
+                    + tabla.ic95_sup.map("{:.2f}".format) + "]"),
+        "r": tabla.efecto.map("{:+.2f}".format),
+        "p Holm": tabla.p_holm.map(lambda p: "< 0.001" if p < 0.001 else f"{p:.3f}"),
+        "Signif.": tabla.significativo.map({True: "si", False: "no"}),
+        "t coincide": tabla.coinciden.map({True: "si", False: "no"}),
+    })
+
+
+# Imprime una tabla con su titulo. to_string es de pandas: alinea las
+# columnas solo, e index=False saca la columna de numeros de fila.
+def imprimir_tabla(titulo, tabla):
+    print(f"\n{titulo}\n")
+    print(tabla.to_string(index=False))
+
+
+#Si apretamos el botón para ejecutar, se core esto:
 if __name__ == "__main__":
     if not (CARACTERISTICAS / "metricas.csv").exists():
         print("Falta metricas.csv. Correr antes: python modulos/ventanas.py")
@@ -659,3 +725,14 @@ if __name__ == "__main__":
                "p_holm", "significativo", "sentido", "coinciden"]].round(4).to_string(index=False))
     p3b.to_csv(TABLAS / "p3b_dentro_del_video.csv", index=False)
     print(f"\nGuardado en results/tables/p3b_dentro_del_video.csv")
+
+    # --- P3b, replicacion en Group2 y Group4 (exploratoria) ---
+    replica = p3b_replicacion()
+    print("\n")
+    print("P3b, replicacion: la misma comparacion en los tres grupos")
+    print("     (Group2 y Group4 tienen biofeedback durante los videos: solo vale la comparacion dentro del video)\n")
+    for grupo, tabla in replica.groupby("grupo", sort=False):
+        imprimir_tabla(f"{grupo} (diferencia = ultimos 10 s - primeros 10 s)",
+                       resumen_para_imprimir(tabla))
+    replica.to_csv(TABLAS / "p3b_replicacion.csv", index=False)
+    print(f"\nGuardado en results/tables/p3b_replicacion.csv")
