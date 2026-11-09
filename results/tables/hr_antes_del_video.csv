@@ -1,0 +1,2 @@
+medida,mediana_previo,mediana_reposo,por_encima,por_debajo,n,test,estadistico,p,diferencia,ic95_inf,ic95_sup,efecto,t_estadistico,t_p,t_diferencia,t_ic95_inf,t_ic95_sup,t_efecto,significativo,t_significativo,coinciden
+HR 10 s previos - HR reposo,84.74906250000001,77.715,15,3,18,Wilcoxon,14.0,0.0008392333984375,4.487187500000012,2.6787499999999937,6.926562499999996,0.8362573099415205,4.691463630188177,0.00020997564367654937,4.69295138888889,2.5824667455505956,6.803436032227184,1.105788582198706,True,True,True

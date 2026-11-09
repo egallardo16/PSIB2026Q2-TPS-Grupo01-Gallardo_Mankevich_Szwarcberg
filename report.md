@@ -120,7 +120,7 @@ Solo cumplen **Nmean, avNN, std y rMSSD**. Las demás se usan solo en ventanas d
 
 | Decisión | Por qué |
 |---|---|
-| **Solo Group3** (18 personas) | En Group2 y Group4 el reposo viene justo después de un ejercicio de respiración lenta (biofeedback), que sube la variabilidad a propósito. Como el reposo es nuestra referencia, en esos grupos la comparación quedaría alterada. Group3 no hizo ese ejercicio |
+| **Solo Group3** (18 personas) | En Group2 y Group4 el reposo viene justo después de un ejercicio de respiración lenta (biofeedback), que sube la variabilidad a propósito. Como el reposo es nuestra referencia, en esos grupos la comparación quedaría alterada. Group3 no hizo ese ejercicio. La única excepción es la replicación de P3b, que no usa el reposo |
 | **Ventanas de 60 s** como análisis principal | Cada video dura unos 60 s, así que una ventana es un video entero. Ihmig et al. usan 10 y 60 s, y Pereira et al. (2017) muestran que la HRV es usable en ventanas de alrededor de 1 minuto |
 | **El reposo se corta en ventanas de 60 s** | Para comparar videos y reposo con el mismo largo, porque varias métricas cambian con la duración de la ventana |
 | **Ventana válida** si conserva al menos el 70 % de los latidos esperados | Con menos, la ventana quedó muy recortada por los latidos descartados y sus métricas no representan ese minuto. Es un criterio nuestro, sin cita |
@@ -167,9 +167,11 @@ Todo se genera con `python modulos/estadisticas.py` y queda en `results/tables/`
 |---|---|
 | `p1_exposicion_vs_reposo.csv` | P1 |
 | `p2_respuesta_inicial.csv` | P2 |
+| `hr_antes_del_video.csv` | P2, complemento: HR antes del video vs reposo |
 | `p3a_pendientes.csv` | P3a, test de las pendientes |
 | `p3a_friedman.csv` | P3a, Friedman |
 | `p3b_dentro_del_video.csv` | P3b |
+| `p3b_replicacion.csv` | P3b repetido en Group2 y Group4 |
 
 ### Cómo leer las tablas
 
@@ -280,7 +282,23 @@ La t llega a la misma conclusión en las tres.
 - **std baja porque al principio la HR se está moviendo,** justamente al bajar, no porque cambie la activación. Por eso no la interpretamos como "más" o "menos" activación.
 - **rMSSD no cambia** dentro del video.
 
-**Un dato que cambia la lectura** (exploratorio): en los 10 s *antes* de cada video, la HR ya está unos 4 a 6 lpm por encima del reposo (media +4,1; mediana +5,6), en 13 de 18 personas. Es decir, la HR no sube cuando aparece la araña (por eso P2 no da nada): ya estaba alta antes. Puede ser anticipación del próximo video, o efecto de lo que hacían entre videos (responder preguntas sobre el video anterior). Con este diseño no podemos separar las dos cosas.
+**P3b se repite en los otros dos grupos** (exploratorio). P3b compara cada video consigo mismo, así que no necesita el reposo y se puede hacer también en Group2 y Group4. Esos grupos tienen biofeedback durante toda la sesión, por eso solo los usamos para esta comparación y no comparamos sus niveles con los de Group3.
+
+| Grupo | Personas | Cambio de HR (HL) | IC 95 % | r | p Holm |
+|---|---|---|---|---|---|
+| Group3 | 18 de 18 bajan | −2,0 lpm | −3,6 a −1,2 | −1,00 | **< 0,001** |
+| Group2 | 18 de 19 bajan | −2,1 lpm | −2,5 a −1,7 | −0,91 | **< 0,001** |
+| Group4 | 14 de 19 bajan | −1,6 lpm | −2,9 a −0,4 | −0,64 | **0,037** |
+
+La baja de la HR dentro del video aparece en los tres grupos, con un tamaño parecido (unos 2 lpm), y la t llega a lo mismo. En total son 56 personas. La figura `12_replicacion_por_grupo.png` muestra que en los tres la HR baja en los primeros 20 s y después se mantiene. En cambio, la baja de std no se repite en Group2 ni en Group4. rMSSD tampoco cambia de forma significativa con Wilcoxon. En Group2 la t sí marca una suba de rMSSD, pero como los dos tests no coinciden, no la tomamos como resultado. Lo único que se replica es la HR.
+
+**Un dato que cambia la lectura: la HR ya está alta antes del video** (exploratorio). Comparamos la HR de los 10 s previos a cada video (promedio de los 16 videos) con la HR del reposo de cada persona. Wilcoxon pareado, con la t como sensibilidad:
+
+| HR 10 s previos (mediana) | HR reposo (mediana) | Personas | Cambio (HL) | IC 95 % | r | p |
+|---|---|---|---|---|---|---|
+| 84,7 lpm | 77,7 lpm | 15 de 18 por encima | +4,5 lpm | 2,7 a 6,9 | 0,84 | **< 0,001** |
+
+La t llega a lo mismo. Es decir, la HR no sube cuando aparece la araña (por eso P2 no da nada): ya estaba alta antes. Puede ser anticipación del próximo video, o efecto de lo que hacían entre videos (responder preguntas sobre el video anterior). Con este diseño no podemos separar las dos cosas.
 
 ## Conclusiones
 
@@ -288,23 +306,24 @@ La t llega a la misma conclusión en las tres.
 
 1. **Durante la sesión de videos hay más activación cardíaca que en el reposo, sobre todo al principio.** En los primeros videos la HR está unos 4 lpm por encima del reposo y la HRV (SDNN, rMSSD) es claramente menor (comparación exploratoria).
 2. **Esa activación es menor en la segunda mitad de la sesión (P3a).** Del primer al último video la HR baja unos 5 lpm y la HRV sube, en 15 o 16 de las 18 personas. Es significativo después de Holm. Hacia el final ya no se distingue del reposo. Pero el cambio se concentra en el paso de la mitad 1 a la mitad 2, más que en una baja gradual video a video.
-3. **Y también se apaga dentro de cada video (P3b).** La HR arranca alta y en unos 20 s baja al nivel del reposo. Pasa en las 18 personas.
-4. **La HR no sube cuando aparece la araña (P2): ya estaba alta antes.** En los 10 s previos a cada video la HR ya está unos 4 a 6 lpm por encima del reposo (exploratorio). La activación parece empezar antes del video, no con él.
+3. **Y también se apaga dentro de cada video (P3b).** La HR arranca alta y en unos 20 s baja unos 2 lpm; en Group3 eso la deja en el nivel del reposo. Pasa en las 18 personas de Group3 y se repite en Group2 y Group4: en total, en 50 de 56 personas. Es el resultado más sólido del trabajo.
+4. **La HR no sube cuando aparece la araña (P2): ya estaba alta antes.** En los 10 s previos a cada video la HR ya está unos 4,5 lpm por encima del reposo, en 15 de las 18 personas (p < 0,001; exploratorio). La activación parece empezar antes del video, no con él.
 5. **Por eso, tomando los 16 videos completos, no hay diferencia significativa con el reposo (P1).** La dirección es la esperada y los efectos son medianos a grandes, pero al promediar los momentos activados con los ya tranquilos el efecto se diluye. Con 18 personas, además, falta poder para detectarlo.
 
-**En una frase:** la activación cardíaca es transitoria. Es máxima antes y al empezar cada video, se apaga en unos segundos, y es menor en la segunda mitad de la sesión que en la primera.
+**En una frase:** la activación cardíaca es transitoria. Es máxima antes y al empezar cada video, se apaga en unos segundos (esto se repite en los tres grupos), y es menor en la segunda mitad de la sesión que en la primera.
 
 **Qué tan firmes son estos resultados**
 
-- Los resultados no dependen del test elegido: Wilcoxon y la t llegan a la misma conclusión en todas las comparaciones.
+- Los resultados no dependen del test elegido: Wilcoxon y la t llegan a la misma conclusión en todas las comparaciones de Group3. La única diferencia aparece en la replicación, en rMSSD de Group2, y no afecta a ninguna conclusión.
 - No dependen de VP03: sacarlo, debido a que su grabación se corto antes de tiempo y el reposo, que usamos como referencia, no es confiable; no cambia nada. Por eso hicimos un análisis de sensibilidad: repetir P1 sin VP03 no cambió nada. Por lo tanto, afirmamos que los resultados no dependen de incluir o no al participante con el reposo incompleto.
+- La baja de la HR dentro del video (P3b) no es propia de Group3: aparece también en Group2 y Group4, que son personas distintas y con otra condición experimental (biofeedback durante los videos). Que el mismo análisis dé lo mismo en tres grupos independientes hace que no sea un resultado casual de una sola muestra.
 
 
 **Qué no podemos afirmar**
 
 - **No sabemos por qué la activación es menor en la segunda mitad.** Puede ser que se acostumbran a las arañas, que se relajan con el tiempo, que los clips 9 a 16 generan menos respuesta, o el cambio de preguntas a partir del clip 9. Los videos se mostraron en dos mitades fijas, así que el diseño no permite separar estas causas.
 - **No sabemos si la activación antes de cada video es miedo anticipado o efecto de responder las preguntas** sobre el video anterior.
-- **Los resultados valen para Group3** (18 personas sin entrenamiento de biofeedback). No se pueden extender a los otros grupos sin analizarlos.
+- **Los resultados valen para Group3** (18 personas sin entrenamiento de biofeedback). La excepción es la baja de la HR dentro del video, que también comprobamos en Group2 y Group4. El resto (P1, P2, P3a) no se puede extender a esos grupos, porque usa el reposo o compara momentos de la sesión en los que estaban haciendo biofeedback.
 - **El ECG no diagnostica ansiedad.** Lo que mostramos son cambios en la actividad cardíaca entre condiciones, compatibles con más activación durante la exposición.
 
 

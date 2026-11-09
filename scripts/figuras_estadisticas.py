@@ -2,9 +2,10 @@
 
 #     QUE HACE : arma las figuras que acompañan a los tests de estadisticas.py
 #     ENTRA    : metricas.csv (y los intervalos, para la HR previa al video)
-#     SALE     : 09_videos_vs_reposo.png
-#                10_hr_a_lo_largo_de_los_videos.png
-#                11_hr_dentro_del_video.png
+#     SALE     : -09_videos_vs_reposo.png
+#                -10_hr_a_lo_largo_de_los_videos.png
+#                -11_hr_dentro_del_video.png
+#                -12_replicacion_por_grupo.png
 #     CORRER   : python scripts/figuras_estadisticas.py
             
 
@@ -165,7 +166,49 @@ def figura_hr_dentro_del_video(metricas):
     return fig
 
 
-# Al ejecutar: genera y guarda las tres figuras
+# Figura 12 -- Replicacion de P3b en los tres grupos
+
+# HR (Nmean) en las 6 ventanas de 10 s del video, una curva por grupo.
+# A cada persona se le resta su primera ventana: asi todas las curvas
+# arrancan en 0 y se ve solo cuanto baja la HR dentro del video. Los niveles
+# no se comparan entre grupos, porque Group2 y Group4 tienen biofeedback.
+def figura_replicacion_por_grupo():
+    colores = {"Group3": COLOR_HR, "Group2": "tab:purple", "Group4": "tab:green"}
+
+    fig, ax = plt.subplots(figsize=(9, 4))
+    for grupo in est.GRUPOS:
+        metricas = est.metricas_de_grupo(grupo)
+        cortas = metricas[(metricas.window_duration_s == 10)
+                          & (metricas.condition == "exposicion")].copy()
+        por_video = cortas.groupby(["participant_id", "event_id"]).window_start_s
+        cortas["posicion"] = por_video.rank(method="first").astype(int) - 1
+        cortas = cortas[cortas.valida]
+
+        # Una fila por persona, una columna por ventana (promedio de sus 16 videos).
+        matriz = cortas.pivot_table(index="participant_id", columns="posicion",
+                                    values="Nmean")
+        matriz = matriz.sub(matriz[0], axis=0).dropna(subset=[0])
+        media, margen = _media_ic(matriz)
+        centros = np.array(media.index, dtype=float) * 10 + 5
+
+        ax.plot(centros, media, color=colores[grupo], marker="o",
+                label=f"{grupo} (n = {len(matriz)})")
+        ax.fill_between(centros, media - margen, media + margen,
+                        color=colores[grupo], alpha=0.15)
+
+    ax.axhline(0, color="k", linestyle="--", linewidth=1)
+    ax.set_xticks([5, 15, 25, 35, 45, 55],
+                  ["0-10", "10-20", "20-30", "30-40", "40-50", "50-60"])
+    ax.set_xlabel("Tramo de 10 s (segundos desde el inicio del video)")
+    ax.set_ylabel("Cambio de HR respecto de los\nprimeros 10 s [lpm]")
+    ax.set_title("P3b en los tres grupos: la HR baja dentro del video (media ± IC 95 %)")
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right", fontsize=8)
+    fig.tight_layout()
+    return fig
+
+
+# Al ejecutar: genera y guarda las cuatro figuras
 
 if __name__ == "__main__":
     metricas = est.cargar_metricas()
@@ -173,6 +216,7 @@ if __name__ == "__main__":
         "09_videos_vs_reposo.png": figura_videos_vs_reposo(metricas),
         "10_hr_a_lo_largo_de_los_videos.png": figura_a_lo_largo_de_los_videos(metricas),
         "11_hr_dentro_del_video.png": figura_hr_dentro_del_video(metricas),
+        "12_replicacion_por_grupo.png": figura_replicacion_por_grupo(),
     }
     for nombre, fig in figuras.items():
         guardar(fig, nombre)

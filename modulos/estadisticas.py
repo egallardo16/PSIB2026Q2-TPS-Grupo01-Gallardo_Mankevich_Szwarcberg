@@ -19,8 +19,10 @@
 # Preguntas del trabajo
 # P1: ¿Difieren la frecuencia cardiaca y su variabilidad entre la exposicion a los videos y el reposo?
 # P2: ¿El pulso cambia apenas empieza cada video? (respuesta inicial)
+#       ¿la HR ya esta alta antes del video? --> hr_antes_del_video.csv
 # P3a:  ¿La respuesta baja a lo largo de los 16 videos? (habituacion)
 # P3b:  ¿La respuesta baja dentro de cada video?
+#       + replicacion de P3b en Group2 y Group4 --> p3b_replicacion.csv
 
 # Unidad de analisis: el participante
 # Cada participante aporta muchas ventanas (16 videos, mas las del reposo).
@@ -415,22 +417,65 @@ def p2_respuesta_inicial(derivadas):
     tabla["coinciden"] = tabla.significativo == tabla.t_significativo
     return tabla
 
+
+#P2, complemento: ¿la HR ya esta alta ANTES de que empiece el video? 
+# - Por que: P2 no encuentra respuesta al empezar el video. Una explicacion es
+#   que la HR ya estaba alta antes, asi que no tiene para donde subir.
+# - Dato de entrada: la HR de los 10 s previos a cada video (respuesta_inicial,
+#   en ventanas.py), promediada sobre los 16 videos de cada persona, y la HR
+#   del reposo de esa persona (derivadas.csv).
+# - Test: Wilcoxon pareado (10 s previos vs reposo), t como sensibilidad.
+# - Como leerlo: diferencia > 0 y significativo -> la persona ya llega
+#   activada al video.
+# - Limitacion: esos 10 s caen en la pausa en la que responden preguntas sobre
+#   el video anterior. Hablar o moverse tambien sube la HR, asi que no se
+#   puede decir que sea miedo anticipado.
+#   Devuelve una tabla de una fila.
+def hr_antes_del_video_vs_reposo(derivadas):
+    from modulos.ventanas import respuesta_inicial
+
+    # HR de los 10 s previos: una fila por video -> un valor por persona.
+    previo = respuesta_inicial().groupby("participant_id").hr_previo_lpm.mean()
+    reposo = derivadas.set_index("participant_id").hr_reposo_lpm
+
+    # Se alinean por persona y se descartan las que no tienen las dos.
+    par = pd.concat([previo.rename("previo"), reposo.rename("reposo")], axis=1).dropna()
+
+    fila = {
+        "medida": "HR 10 s previos - HR reposo",
+        "mediana_previo": par.previo.median(),
+        "mediana_reposo": par.reposo.median(),
+        "por_encima": int((par.previo > par.reposo).sum()),
+        "por_debajo": int((par.previo < par.reposo).sum()),
+    }
+    fila.update(test_w_pareado(par.previo, par.reposo))   # principal
+    fila.update(test_t_pareado(par.previo, par.reposo))   # sensibilidad
+
+    tabla = pd.DataFrame([fila])
+    tabla["significativo"] = tabla.p < ALFA
+    tabla["t_significativo"] = tabla.t_p < ALFA
+    tabla["coinciden"] = tabla.significativo == tabla.t_significativo
+    return tabla
+
+
 # Traduce el signo de un cambio a "mas" o "menos activacion".
 # Hace falta porque el signo significa cosas opuestas segun la metrica:
-#   - en el pulso (Nmean, avNN), que BAJE es calmarse;
+#   - en la HR (Nmean), que BAJE es calmarse; en avNN (tiempo entre latidos), que SUBA;
 #   - en la variabilidad (SDNN, rMSSD, pNN20, std...), que SUBA es calmarse.
 # HRV_ihmig mide tendencia y no tiene una lectura de activacion clara.
 # std tampoco: en ventanas de 10 s refleja sobre todo cuanto se MUEVE el pulso
 # dentro de la ventana. Al empezar cada video el pulso esta bajando rapido, y
 # eso solo ya sube std en la primera ventana, sin que cambie la activacion.
+
 def _sentido(metrica, cambio):
-    if metrica in ("HRV_ihmig", "std") or pd.isna(cambio) or cambio == 0:
+    if metrica in ("HRV_ihmig", "std") or pd.isna(cambio) or cambio == 0: #cambio vacío o 0: no hay dirección que traducir. 
         return "-"
     if metrica == "avNN":                 # intervalo mas largo = pulso mas lento
         return "menos activacion" if cambio > 0 else "mas activacion"
     if metrica == "Nmean":
         return "menos activacion" if cambio < 0 else "mas activacion"
     return "menos activacion" if cambio > 0 else "mas activacion"
+
 
 
 #P3a. ¿La respuesta baja a lo largo de los 16 videos? (habituacion entre videos)
@@ -588,7 +633,72 @@ def p3b_habituacion_dentro_del_video(metricas, lista_metricas=METRICAS_P3B):
     return tabla
 
 
-#Si apretamos el botón para ejecutar, se core esto: 
+# 4. REPLICACION DE P3b EN LOS OTROS GRUPOS
+
+# P3b compara cada video consigo mismo (final vs inicio), asi que no necesita
+# el reposo. Por eso se puede repetir en Group2 y Group4, que en el resto del
+# trabajo quedan afuera porque hacen biofeedback antes del reposo.
+# Ojo: esos grupos tienen un biofeedback que dura toda la sesion de videos.
+# Solo se usan para esta comparacion dentro del video, nunca contra el reposo
+# ni para comparar niveles entre grupos. Es una replicacion exploratoria.
+GRUPOS = ["Group3", "Group2", "Group4"]
+
+
+#Función: devuelve la tabla de métricas de un grupo, igual que metricas.csv pero para el grupo que pidas. 
+def metricas_de_grupo(grupo):
+    if grupo == "Group3":
+        return cargar_metricas()
+
+    archivo = CARACTERISTICAS / f"metricas_{grupo.lower()}.csv"
+    if archivo.exists():
+        return pd.read_csv(archivo)
+
+    from modulos.ventanas import CRUDO, generar
+    grupos = pd.read_csv(CRUDO / "subject_groups.csv")
+    tabla = generar(sorted(grupos[grupo].dropna().tolist()))
+    tabla.to_csv(archivo, index=False)
+    return tabla
+
+
+# Le aplica P3b (la misma funcion que para Group3 antes, sin cambios) en cada grupo 
+# y junta los resultados en una tabla, con una columna "grupo". Holm se aplica dentro de
+# cada grupo, igual que en el analisis original.
+def p3b_replicacion(grupos=GRUPOS):
+    tablas = []
+    for grupo in grupos:
+        tabla = p3b_habituacion_dentro_del_video(metricas_de_grupo(grupo))
+        tabla.insert(0, "grupo", grupo)
+        tablas.append(tabla)
+    return pd.concat(tablas, ignore_index=True)
+
+
+# 5. IMPRIMIR LOS RESULTADOS EN PANTALLA
+
+# Deja solo las columnas que hacen falta para leer el resultado, con nombres
+# claros y el IC 95 % en una sola columna. El CSV guarda todas.
+def resumen_para_imprimir(tabla):
+    return pd.DataFrame({
+        "Metrica": tabla.metrica,
+        "n": tabla.n,
+        "Bajan / suben": tabla.bajan.astype(str) + " / " + tabla.suben.astype(str),
+        "Cambio (HL)": tabla.diferencia.map("{:+.2f}".format),
+        "IC 95 %": ("[" + tabla.ic95_inf.map("{:.2f}".format) + ", "
+                    + tabla.ic95_sup.map("{:.2f}".format) + "]"),
+        "r": tabla.efecto.map("{:+.2f}".format),
+        "p Holm": tabla.p_holm.map(lambda p: "< 0.001" if p < 0.001 else f"{p:.3f}"),
+        "Signif.": tabla.significativo.map({True: "si", False: "no"}),
+        "t coincide": tabla.coinciden.map({True: "si", False: "no"}),
+    })
+
+
+# Imprime una tabla con su titulo. to_string es de pandas: alinea las
+# columnas solo, e index=False saca la columna de numeros de fila.
+def imprimir_tabla(titulo, tabla):
+    print(f"\n{titulo}\n")
+    print(tabla.to_string(index=False))
+
+
+#Si apretamos el botón para ejecutar, se core esto:
 if __name__ == "__main__":
     if not (CARACTERISTICAS / "metricas.csv").exists():
         print("Falta metricas.csv. Correr antes: python modulos/ventanas.py")
@@ -633,6 +743,17 @@ if __name__ == "__main__":
     p2.to_csv(TABLAS / "p2_respuesta_inicial.csv", index=False)
     print(f"\nGuardado en results/tables/p2_respuesta_inicial.csv")
 
+    # --- P2, complemento: HR en los 10 s previos al video vs reposo ---
+    antes = hr_antes_del_video_vs_reposo(cargar_derivadas())
+    print("\n")
+    print("P2, complemento (exploratorio): HR en los 10 s previos al video vs HR en reposo")
+    print("    Wilcoxon pareado (diferencia = Hodges-Lehmann, en lpm); t como sensibilidad\n")
+    print(antes[["n", "mediana_previo", "mediana_reposo", "por_encima", "por_debajo",
+                 "diferencia", "ic95_inf", "ic95_sup", "efecto", "p",
+                 "significativo", "t_p", "coinciden"]].round(4).to_string(index=False))
+    antes.to_csv(TABLAS / "hr_antes_del_video.csv", index=False)
+    print(f"\nGuardado en results/tables/hr_antes_del_video.csv")
+
     # --- P3a: habituacion a lo largo de los 16 videos ---
     p3a = p3a_habituacion_entre_videos(cargar_habituacion())
     print("\n")
@@ -659,3 +780,14 @@ if __name__ == "__main__":
                "p_holm", "significativo", "sentido", "coinciden"]].round(4).to_string(index=False))
     p3b.to_csv(TABLAS / "p3b_dentro_del_video.csv", index=False)
     print(f"\nGuardado en results/tables/p3b_dentro_del_video.csv")
+
+    # --- P3b, replicacion en Group2 y Group4 (exploratoria) ---
+    replica = p3b_replicacion()
+    print("\n")
+    print("P3b, replicacion: la misma comparacion en los tres grupos")
+    print("     (Group2 y Group4 tienen biofeedback durante los videos: solo vale la comparacion dentro del video)\n")
+    for grupo, tabla in replica.groupby("grupo", sort=False):
+        imprimir_tabla(f"{grupo} (diferencia = ultimos 10 s - primeros 10 s)",
+                       resumen_para_imprimir(tabla))
+    replica.to_csv(TABLAS / "p3b_replicacion.csv", index=False)
+    print(f"\nGuardado en results/tables/p3b_replicacion.csv")
