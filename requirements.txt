@@ -17,7 +17,7 @@ pandas>=2.0          # (3.1.1)  lectura de los .txt y tablas de resultados
 # --- Graficos ---
 matplotlib>=3.7      # (3.11.2) visualizacion de ECG, tacogramas y resultados
 
-# --- Aprendizaje automatico ---
+# --- Para k-Means ---
 scikit-learn>=1.3    # (1.9.1)  K-means para la deteccion de latidos ectopicos
 
 # --- Descarga del dataset ---
@@ -29,3 +29,5 @@ requests>=2.31       # (2.34.2) usado por scripts/descargar_dataset.py
 # --- Notebooks ---
 jupyter>=1.0         # (1.1.1)  para abrir y ejecutar los .ipynb
 ipykernel>=6.25      # (7.4.0)  registra el entorno como kernel de Jupyter
+
+statsmodels>=0.14
