@@ -120,7 +120,7 @@ def fig_tacogramas():
     # Se usa para marcarlos en rojo sobre el tacograma RR.
     descartados = tabla.quality_flag != FLAG_OK
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 6), sharex=True, sharey=True)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 6), sharex=True)
 
     ax1.plot(tabla.rr_end_s, tabla.rr_ms, color="tab:gray", linewidth=0.8)
     ax1.plot(tabla.rr_end_s[descartados], tabla.rr_ms[descartados], "o",
@@ -207,7 +207,8 @@ def fig_calidad_cohorte():
     # Ordenado por grupo y, dentro de cada grupo, de mejor a peor calidad.
     df = df.sort_values(["grupo", "pct_descartado"])
 
-    colores = {"Group2": "tab:orange", "Group3": "tab:green", "Group4": "tab:red"}
+    # Mismos colores por grupo que en la figura 12 (scripts/figuras_estadisticas.py).
+    colores = {"Group2": "tab:purple", "Group3": "tab:red", "Group4": "tab:green"}
 
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.bar(df.participante, df.pct_descartado,

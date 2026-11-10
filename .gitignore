@@ -2,6 +2,9 @@
 # No se versionan. Los 5 registros de muestra de registros/ si estan en el repo.
 data/
 
+# Salida de cada script al correr main.py: se reescribe en cada corrida
+results/log_ejecucion.txt
+
 # Descargas interrumpidas por el script
 *.parcial
 

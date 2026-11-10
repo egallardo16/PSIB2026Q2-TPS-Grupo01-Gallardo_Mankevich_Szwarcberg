@@ -12,7 +12,7 @@ def _mostrar_o_guardar(fig, guardar):
 
 
 def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
-                 picos=None, titulo="ECG"):
+                 picos=None, titulo="ECG", guardar=None):
     """
     ecg    : señal (lista con voltajes en [mV])
     fs     : frecuencia de muestreo [Hz]
@@ -48,10 +48,10 @@ def graficar_ecg(ecg, fs, t_ini=0, t_fin=None, color="tab:blue",
     ax.set_xlim(t_ini, t_fin)
     ax.grid(alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    _mostrar_o_guardar(fig, guardar)
 
 def graficar_tacograma(picos_R, fs, t_ini=0, t_fin=None, color="tab:blue",
-                       en_ms=True, titulo="Tacograma"):
+                       en_ms=True, titulo="Tacograma", guardar=None):
     """
     picos_R : índices de muestra de las ondas R
     fs      : frecuencia de muestreo [Hz]
@@ -83,10 +83,11 @@ def graficar_tacograma(picos_R, fs, t_ini=0, t_fin=None, color="tab:blue",
     ax.set_xlim(t_ini, t_fin)
     ax.grid(alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    _mostrar_o_guardar(fig, guardar)
 
 def graficar_correlacion(validos, corr, fs, t_ini=0, t_fin=None, color="tab:blue",
-                         umbral=None, titulo="Correlación con plantilla local"):
+                         umbral=None, titulo="Correlación con plantilla local",
+                         guardar=None):
     """
     validos : índices de muestra de las R (salida de correlacion_latidos)
     corr    : correlación de cada latido con su plantilla
@@ -128,4 +129,4 @@ def graficar_correlacion(validos, corr, fs, t_ini=0, t_fin=None, color="tab:blue
     ax.set_ylim(min(corr[m].min(), 0.9) - 0.02, 1.01)
     ax.grid(alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    _mostrar_o_guardar(fig, guardar)

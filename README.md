@@ -87,6 +87,7 @@ registros de `registros/` están incluidos en el repositorio como muestra.
 ```
 .
 ├── README.md
+├── main.py                     # corre todo el pipeline en orden
 ├── report.md                   # decisiones, criterios y resultados del análisis estadístico
 ├── requirements.txt
 ├── Exploratorio.ipynb          # exploración del dataset y de la estructura de los registros
@@ -124,6 +125,28 @@ y qué produce.
 
 Todo se ejecuta **desde la raíz del repositorio**, porque las rutas son
 relativas a ella.
+
+**Todo de una vez.** `main.py` corre los pasos 1 a 5 en orden (y la descarga,
+si falta el dataset). Si los QRS ya están detectados no los repite, porque es
+lo más lento:
+
+```bash
+~/.venvs/psib-tps/bin/python main.py                      # todo
+~/.venvs/psib-tps/bin/python main.py --reprocesar         # vuelve a detectar los QRS
+~/.venvs/psib-tps/bin/python main.py --desde estadistica  # solo tests y figuras
+~/.venvs/psib-tps/bin/python main.py --desde resumen      # solo imprime los resultados
+```
+
+En pantalla muestra una línea por paso y, al terminar, un **resumen de
+resultados**: calidad del procesamiento, métricas elegidas y una tabla por
+pregunta (P1 a P3b) con el cambio, su IC 95 %, el tamaño de efecto y el p
+corregido. El mismo resumen queda guardado en `results/resumen_resultados.txt`;
+las tablas completas, en `results/tables/`; y todo lo que imprime cada script,
+en `results/log_ejecucion.txt`.
+
+Los pasos posibles para `--desde` son `descarga`, `procesamiento`, `metricas`,
+`seleccion`, `estadistica`, `figuras` y `resumen`. Abajo se explica cada paso
+por separado.
 
 **1. Procesar los registros.** Es el paso principal: carga cada ECG, lo filtra,
 detecta los complejos QRS, arma la serie RR y la convierte en serie NN.

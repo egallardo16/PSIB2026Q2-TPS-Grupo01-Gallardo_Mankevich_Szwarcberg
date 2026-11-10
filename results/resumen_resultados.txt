@@ -1,0 +1,93 @@
+
+======================================================================
+RESUMEN DE RESULTADOS
+======================================================================
+
+Procesamiento de la señal (57 registros)
+----------------------------------------
+Intervalos descartados: fuera de 300-2000 ms o con un salto > 20 % respecto del anterior.
+
+ Participantes  Intervalos RR   Descartados  Por rango  Por salto brusco HR media [lpm]              > 5 % descartado
+            57         182496 4316 (2.36 %)       1122              3194           82.9 VP70 (59.71 %), VP23 (8.25 %)
+
+Metricas: una representante por familia (las que se testean)
+------------------------------------------------------------
+Metricas confiables en ventanas de 10 s: Nmean, avNN, rMSSD, std.
+
+Representante        Otras de la familia Sirve a 10 s
+        Nmean                       avNN           si
+         SDNN             CVNN, SD2, std           no
+        rMSSD NFD, NN50, NSD, SD1, pNN50           si
+        pNN20                          -           no
+    HRV_ihmig                          -           no
+
+P1. ¿Difieren la HR y la HRV entre los videos y el reposo? (Group3, ventanas de 60 s)
+-------------------------------------------------------------------------------------
+Cambio = videos - reposo, por persona. Wilcoxon pareado + Holm; la conclusion sale de p Holm.
+
+  Metrica Videos (mediana) Reposo (mediana)  n Cambio (HL)         IC 95 %     r     p p Holm Signif. t coincide
+    Nmean             0.64            -0.03 18       +2.03   [-0.28, 3.94] +0.44 0.108  0.325      no         si
+     SDNN            46.67            56.13 18       -9.33 [-20.28, -0.66] -0.59 0.027  0.134      no         si
+    rMSSD            30.31            30.48 18       -5.02  [-10.28, 0.17] -0.51 0.060  0.240      no         si
+    pNN20            39.83            39.36 18       -4.11   [-9.55, 3.11] -0.36 0.196  0.393      no         si
+HRV_ihmig             0.08            -0.02 18       +0.19   [-0.10, 0.76] +0.32 0.246  0.393      no         si
+
+P2. ¿La HR cambia apenas empieza el video?
+------------------------------------------
+Cambio = HR(primeros 10 s del video) - HR(10 s previos). Wilcoxon contra 0.
+
+Mediana [lpm] Aceleran / frenan  n Cambio (HL)       IC 95 %     r     p Signif. t coincide
+        -0.07             8 / 9 18       -0.17 [-1.08, 0.64] -0.16 0.570      no         si
+
+P2, complemento (exploratorio): ¿la HR ya esta alta antes del video?
+--------------------------------------------------------------------
+Cambio = HR(10 s previos al video) - HR(reposo), en lpm. Wilcoxon pareado.
+
+HR previa (mediana) HR reposo (mediana) Por encima / debajo  n Cambio (HL)      IC 95 %     r       p Signif. t coincide
+               84.7                77.7              15 / 3 18       +4.49 [2.68, 6.93] +0.84 < 0.001      si         si
+
+P3a. ¿La respuesta cambia a lo largo de los 16 videos? (habituacion entre videos)
+---------------------------------------------------------------------------------
+Cambio = pendiente por video de cada persona. Wilcoxon de las pendientes contra 0 + Holm.
+
+  Metrica Cambio video 1 a 16 (mediana) Bajan / suben  n Cambio (HL)        IC 95 %     r     p p Holm Signif. t coincide          Sentido
+    Nmean                         -5.11        16 / 2 18       -0.33 [-0.45, -0.18] -0.80 0.002  0.006      si         si menos activacion
+     SDNN                         +7.72        3 / 15 18       +0.53  [-0.19, 1.16] +0.51 0.060  0.120      no         si menos activacion
+    rMSSD                         +4.77        3 / 15 18       +0.35   [0.16, 0.72] +0.79 0.002  0.006      si         si menos activacion
+    pNN20                         +8.19        2 / 16 18       +0.55   [0.27, 0.88] +0.81 0.001  0.006      si         si menos activacion
+HRV_ihmig                         +0.08        7 / 11 18       +0.02  [-0.01, 0.05] +0.27 0.325  0.325      no         si                -
+
+P3a, complemento: Friedman sobre las 16 posiciones de video
+-----------------------------------------------------------
+¿Importa la posicion del video? W de Kendall: 0.1 chico, 0.3 mediano, 0.5 grande.
+
+  Metrica  n Chi2 W de Kendall       p  p Holm Signif.
+    Nmean 18 72.8         0.27 < 0.001 < 0.001      si
+     SDNN 18 26.4         0.10   0.034   0.068      no
+    rMSSD 18 50.5         0.19 < 0.001 < 0.001      si
+    pNN20 18 44.2         0.16 < 0.001 < 0.001      si
+HRV_ihmig 18 16.5         0.06   0.352   0.352      no
+
+P3b. ¿La respuesta cambia dentro de cada video? (Group3)
+--------------------------------------------------------
+Cambio = ultimos 10 s - primeros 10 s, promediado sobre los 16 videos. Wilcoxon pareado + Holm.
+
+Metrica Primeros 10 s Ultimos 10 s Bajan / suben  n Cambio (HL)        IC 95 %     r       p  p Holm Signif. t coincide          Sentido
+  Nmean          4.40         0.73        18 / 0 18       -2.03 [-3.57, -1.21] -1.00 < 0.001 < 0.001      si         si menos activacion
+    std          4.91         3.97        17 / 1 18       -1.03 [-1.32, -0.77] -0.81   0.001   0.003      si         si                -
+  rMSSD         28.82        29.02        11 / 7 18       -0.09  [-0.92, 1.70] -0.04   0.899   0.899      no         si   mas activacion
+
+P3b, replicacion (exploratoria): la misma comparacion en los tres grupos
+------------------------------------------------------------------------
+Group2 y Group4 hacen biofeedback durante los videos: solo vale la comparacion dentro del video.
+
+ Grupo Metrica Bajan / suben  n Cambio (HL)        IC 95 %     r       p  p Holm Signif. t coincide          Sentido
+Group3   Nmean        18 / 0 18       -2.03 [-3.57, -1.21] -1.00 < 0.001 < 0.001      si         si menos activacion
+Group3     std        17 / 1 18       -1.03 [-1.32, -0.77] -0.81   0.001   0.003      si         si                -
+Group3   rMSSD        11 / 7 18       -0.09  [-0.92, 1.70] -0.04   0.899   0.899      no         si   mas activacion
+Group2   Nmean        18 / 1 19       -2.12 [-2.54, -1.66] -0.91 < 0.001 < 0.001      si         si menos activacion
+Group2     std        13 / 7 20       -0.20  [-0.52, 0.16] -0.33   0.202   0.202      no         si                -
+Group2   rMSSD        6 / 14 20       +1.45   [0.25, 2.64] +0.54   0.033   0.066      no         no menos activacion
+Group4   Nmean        14 / 5 19       -1.58 [-2.94, -0.35] -0.64   0.012   0.037      si         si menos activacion
+Group4     std        7 / 12 19       +0.35  [-0.13, 0.81] +0.40   0.134   0.267      no         si                -
+Group4   rMSSD        8 / 11 19       +1.10  [-1.54, 3.62] +0.22   0.418   0.418      no         si menos activacion
