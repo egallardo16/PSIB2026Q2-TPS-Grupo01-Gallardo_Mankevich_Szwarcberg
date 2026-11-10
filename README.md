@@ -36,7 +36,7 @@ versión 1.0.0, publicado en PhysioNet por Ihmig et al. (2020).
 
 ## Instalación
 
-Requiere **Python 3.10 o superior** (desarrollado con 3.12.9).
+Requiere **Python 3.10 o superior** (desarrollado con 3.14.6).
 
 ```bash
 git clone https://github.com/egallardo16/TPS_ECG_GRUPO1.git
@@ -207,6 +207,8 @@ los guarda en `results/tables/`:
 | `p3a_pendientes.csv`, `p3a_friedman.csv` | P3a: habituación a lo largo de los 16 videos |
 | `p3b_dentro_del_video.csv` | P3b: habituación dentro de cada video |
 | `p3b_replicacion.csv` | P3b repetido en Group2 y Group4 |
+| `exploratorio_tramos_vs_reposo.csv` | P1, exploratorio: videos 1–4 y 13–16 contra el reposo |
+| `exploratorio_mitades.csv` | P3a, exploratorio: cambio dentro de cada mitad y salto entre mitades |
 
 La replicación calcula la primera vez las métricas de Group2 y Group4 y las
 guarda en `data/features/metricas_group2.csv` y `metricas_group4.csv`.

@@ -672,6 +672,97 @@ def p3b_replicacion(grupos=GRUPOS):
     return pd.concat(tablas, ignore_index=True)
 
 
+# 4b. ANALISIS EXPLORATORIOS (complementan P1 y P3a)
+# Son exploratorios: no estaban planeados de antemano, sino que surgieron al
+# mirar los resultados de P1 y P3a. Por eso se reportan con el p sin corregir.
+
+
+#Exploratorio de P1: primeros 4 videos y ultimos 4 videos, cada uno contra el reposo.
+# - Por que: P1 promedia los 16 videos y no da significativo. Como la HR baja a
+#   lo largo de la sesion (P3a), el promedio mezcla videos con mucha activacion
+#   (al principio) y videos ya tranquilos (al final).
+# - Igual que P1 pero promediando solo las ventanas de 60 s de esas posiciones.
+# - Como leerlo: si contra los primeros videos hay diferencia y contra los
+#   ultimos no, el efecto de P1 se diluye por el paso del tiempo.
+TRAMOS = {"videos 1-4": range(1, 5), "videos 13-16": range(13, 17)}
+
+def exploratorio_tramos_vs_reposo(metricas, lista_metricas=("Nmean", "SDNN", "rMSSD"),
+                                  tramos=TRAMOS):
+    ventanas = metricas[(metricas.window_duration_s == 60) & metricas.valida]
+    reposo = (ventanas[ventanas.condition == "reposo"]
+              .groupby("participant_id")[list(lista_metricas)].mean())
+
+    filas = []
+    for nombre, posiciones in tramos.items():
+        videos = (ventanas[ventanas.exposure_order.isin(posiciones)]
+                  .groupby("participant_id")[list(lista_metricas)].mean())
+        for metrica in lista_metricas:
+            # Se alinean por persona y se descartan las que no tienen las dos.
+            par = pd.concat([videos[metrica].rename("videos"),
+                             reposo[metrica].rename("reposo")], axis=1).dropna()
+            fila = {"tramo": nombre, "metrica": metrica,
+                    "mediana_videos": par.videos.median(),
+                    "mediana_reposo": par.reposo.median()}
+            fila.update(test_w_pareado(par.videos, par.reposo))   # principal
+            fila.update(test_t_pareado(par.videos, par.reposo))   # sensibilidad
+            filas.append(fila)
+
+    tabla = pd.DataFrame(filas)
+    tabla["significativo"] = tabla.p < ALFA
+    tabla["coinciden"] = tabla.significativo == (tabla.t_p < ALFA)
+    return tabla
+
+
+#Exploratorio de P3a: ¿el cambio es gradual o un salto entre las dos mitades?
+# - Por que: los videos se mostraron en dos mitades fijas (posiciones 1-8 =
+#   clips 1-8; 9-16 = clips 9-16). Dentro de cada mitad, posicion y video estan
+#   separados; entre mitades, no.
+# - Para cada persona se calcula:
+#     pendiente dentro de la mitad 1 (posiciones 1 a 8)
+#     pendiente dentro de la mitad 2 (posiciones 9 a 16)
+#     salto entre mitades = promedio(videos 9 y 10) - promedio(videos 7 y 8)
+#   y cada una se testea contra 0 (Wilcoxon, t como sensibilidad).
+# - Como leerlo: si las pendientes no dan y el salto si, la baja de P3a no es
+#   gradual video a video sino un cambio entre la primera y la segunda mitad.
+def exploratorio_mitades(metricas, lista_metricas=("Nmean", "rMSSD", "pNN20")):
+    videos = metricas[(metricas.window_duration_s == 60)
+                      & (metricas.condition == "exposicion") & metricas.valida]
+
+    filas = []
+    for metrica in lista_metricas:
+        medidas = {"pendiente mitad 1": [], "pendiente mitad 2": [],
+                   "salto (9-10 vs 7-8)": []}
+        for _, suyas in videos.groupby("participant_id"):
+            suyas = suyas.dropna(subset=[metrica])
+            mitad1 = suyas[suyas.exposure_order <= 8]
+            mitad2 = suyas[suyas.exposure_order >= 9]
+
+            # Con menos de 4 videos en una mitad la recta no es confiable.
+            if len(mitad1) >= 4:
+                medidas["pendiente mitad 1"].append(
+                    stats.linregress(mitad1.exposure_order, mitad1[metrica]).slope)
+            if len(mitad2) >= 4:
+                medidas["pendiente mitad 2"].append(
+                    stats.linregress(mitad2.exposure_order, mitad2[metrica]).slope)
+
+            despues = suyas[suyas.exposure_order.isin([9, 10])][metrica].mean()
+            antes = suyas[suyas.exposure_order.isin([7, 8])][metrica].mean()
+            if not (np.isnan(despues) or np.isnan(antes)):
+                medidas["salto (9-10 vs 7-8)"].append(despues - antes)
+
+        for medida, valores in medidas.items():
+            valores = np.array(valores)
+            fila = {"metrica": metrica, "medida": medida,
+                    "bajan": int((valores < 0).sum()), "suben": int((valores > 0).sum())}
+            fila.update(test_vs_cero(valores))
+            filas.append(fila)
+
+    tabla = pd.DataFrame(filas)
+    tabla["significativo"] = tabla.p < ALFA
+    tabla["coinciden"] = tabla.significativo == (tabla.t_p < ALFA)
+    return tabla
+
+
 # 5. IMPRIMIR LOS RESULTADOS EN PANTALLA
 
 # Deja solo las columnas que hacen falta para leer el resultado, con nombres
@@ -791,3 +882,23 @@ if __name__ == "__main__":
                        resumen_para_imprimir(tabla))
     replica.to_csv(TABLAS / "p3b_replicacion.csv", index=False)
     print(f"\nGuardado en results/tables/p3b_replicacion.csv")
+
+    # --- Exploratorios: complementan P1 y P3a ---
+    tramos = exploratorio_tramos_vs_reposo(metricas)
+    print("\n")
+    print("Exploratorio de P1: primeros 4 y ultimos 4 videos contra el reposo")
+    print("     Wilcoxon pareado (diferencia = videos - reposo, Hodges-Lehmann); p sin corregir\n")
+    print(tramos[["tramo", "metrica", "n", "mediana_videos", "mediana_reposo",
+                  "diferencia", "ic95_inf", "ic95_sup", "efecto", "p",
+                  "significativo", "coinciden"]].round(4).to_string(index=False))
+    tramos.to_csv(TABLAS / "exploratorio_tramos_vs_reposo.csv", index=False)
+
+    mitades = exploratorio_mitades(metricas)
+    print("\n")
+    print("Exploratorio de P3a: pendiente dentro de cada mitad y salto entre mitades")
+    print("     Wilcoxon contra 0 (diferencia = Hodges-Lehmann); p sin corregir\n")
+    print(mitades[["metrica", "medida", "n", "bajan", "suben", "diferencia",
+                   "ic95_inf", "ic95_sup", "efecto", "p", "significativo",
+                   "coinciden"]].round(4).to_string(index=False))
+    mitades.to_csv(TABLAS / "exploratorio_mitades.csv", index=False)
+    print(f"\nGuardado en results/tables/exploratorio_tramos_vs_reposo.csv y exploratorio_mitades.csv")

@@ -7,7 +7,7 @@
 # Se indican versiones minimas en lugar de versiones exactas para que la
 # instalacion no falle en equipos con otras versiones de Python. Entre
 # parentesis, la version con la que efectivamente se desarrollo el trabajo
-# (Python 3.12.9).
+# (Python 3.14.6).
 
 # --- Calculo numerico y manejo de datos ---
 numpy>=1.24          # (2.5.4)  operaciones vectoriales sobre las senales
@@ -30,4 +30,3 @@ requests>=2.31       # (2.34.2) usado por scripts/descargar_dataset.py
 jupyter>=1.0         # (1.1.1)  para abrir y ejecutar los .ipynb
 ipykernel>=6.25      # (7.4.0)  registra el entorno como kernel de Jupyter
 
-statsmodels>=0.14

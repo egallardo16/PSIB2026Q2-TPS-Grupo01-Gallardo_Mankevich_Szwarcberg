@@ -172,6 +172,8 @@ Todo se genera con `python modulos/estadisticas.py` y queda en `results/tables/`
 | `p3a_friedman.csv` | P3a, Friedman |
 | `p3b_dentro_del_video.csv` | P3b |
 | `p3b_replicacion.csv` | P3b repetido en Group2 y Group4 |
+| `exploratorio_tramos_vs_reposo.csv` | Exploratorio de P1: videos 1–4 y 13–16 contra el reposo |
+| `exploratorio_mitades.csv` | Exploratorio de P3a: pendiente dentro de cada mitad y salto entre mitades |
 
 La comparación de filtros la genera `python scripts/comparar_wiener.py` y queda en `wiener_resumen.csv` y `wiener_por_participante.csv`. `python main.py` corre todo e imprime un resumen de todas estas tablas.
 
@@ -240,7 +242,7 @@ El filtro de Wiener es el que minimiza el error cuadrático medio entre la seña
 |---|---|---|---|---|---|---|
 | −0,07 lpm | 8 / 9 | −0,17 lpm | −1,1 a 0,6 | −0,16 | 0,57 | 0,48 |
 
-No hay una respuesta consistente al empezar el video: la mitad de las personas acelera y la otra mitad frena, y el cambio típico es menor a 1 lpm. La t da lo mismo. Tampoco cambia de forma clara entre los primeros y los últimos videos.
+No hay una respuesta consistente al empezar el video: la mitad de las personas acelera y la otra mitad frena, y el cambio típico es menor a 1 lpm. La t da lo mismo.
 
 Una posible razón: los triggers tienen resolución de 1 s y el eje temporal del ECG puede correrse hasta unos 3 s, así que los tramos de 10 s antes y después del inicio pueden quedar algo corridos. Una respuesta muy rápida, de pocos segundos, podría no verse.
 
@@ -264,7 +266,7 @@ La HR baja y la HRV sube a lo largo de la sesión: la activación es alta al pri
 
 | Métrica | Pendiente dentro de la mitad 1 | Pendiente dentro de la mitad 2 | Salto entre mitades (videos 9–10 vs 7–8) |
 |---|---|---|---|
-| Nmean | baja (12 de 18), p = 0,18 | sin cambio, p = 1,0 | **−2,6 lpm, p = 0,001** |
+| Nmean | baja (12 de 18), p = 0,18 | sin cambio, p = 1,0 | **−2,6 lpm, p < 0,001** |
 | rMSSD | sin cambio, p = 0,97 | sube (11 de 18), p = 0,18 | +1,7 ms, p = 0,13 |
 | pNN20 | p = 0,52 | p = 0,47 | +2,3 %, p = 0,30 |
 
@@ -332,7 +334,7 @@ La t llega a lo mismo. Es decir, la HR no sube cuando aparece la araña (por eso
 **Qué tan firmes son estos resultados**
 
 - Los resultados no dependen del test elegido: Wilcoxon y la t llegan a la misma conclusión en todas las comparaciones de Group3. La única diferencia aparece en la replicación, en rMSSD de Group2, y no afecta a ninguna conclusión.
-- No dependen de VP03: sacarlo, debido a que su grabación se corto antes de tiempo y el reposo, que usamos como referencia, no es confiable; no cambia nada. Por eso hicimos un análisis de sensibilidad: repetir P1 sin VP03 no cambió nada. Por lo tanto, afirmamos que los resultados no dependen de incluir o no al participante con el reposo incompleto.
+- No dependen de VP03: su grabación se cortó antes de tiempo y su reposo, que usamos como referencia, quedó incompleto. Repetimos P1 sin él y no cambió nada.
 - La baja de la HR dentro del video (P3b) no es propia de Group3: aparece también en Group2 y Group4, que son personas distintas y con otra condición experimental (biofeedback durante los videos). Que el mismo análisis dé lo mismo en tres grupos independientes hace que no sea un resultado casual de una sola muestra.
 
 

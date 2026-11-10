@@ -8,7 +8,7 @@
 
 # Pasos:
 # 1. descarga     : baja el dataset de PhysioNet (solo si no esta en data/raw/)
-# 2. procesamiento: filtrado, Pan-Tompkins, serie RR y NN de los 57 registros (tarda varios minutos)
+# 2. procesamiento: filtrado, Pan-Tompkins, serie RR y NN de los 57 registros (tarda menos de un minuto)
 # 3. wiener       : compara el filtro optimo (Wiener) con el Butterworth del pipeline
 # 4. metricas     : ventanas de 60 y 10 s y metricas de HR/HRV de cada una
 # 5. seleccion    : que metricas sirven a 10 s y una representante por familia
@@ -143,6 +143,11 @@ def _si_no(valor):
     return "si" if valor else "no"
 
 
+# El sentido solo se muestra si el resultado es significativo
+def _sentido(t):
+    return t.sentido.where(t.significativo, "-")
+
+
 # Columnas que comparten todos los tests de Wilcoxon (P1, P2, P3a, P3b):
 # cuanto cambio (Hodges-Lehmann), su IC 95 %, el tamaño de efecto r, el p, y
 # si la t pareada llega a la misma conclusion.
@@ -244,6 +249,16 @@ def imprimir_resumen():
                 "Cambio = videos - reposo, por persona. Wilcoxon pareado + Holm; la conclusion sale de p Holm.",
                 tabla)
 
+    t = leer(TABLAS / "exploratorio_tramos_vs_reposo.csv")
+    if t is not None:
+        tabla = pd.DataFrame({"Tramo": t.tramo, "Metrica": t.metrica,
+                              "Videos (mediana)": t.mediana_videos.map("{:.2f}".format),
+                              "Reposo (mediana)": t.mediana_reposo.map("{:.2f}".format),
+                              **_columnas_test(t, con_holm=False)})
+        seccion("P1, exploratorio: primeros 4 y ultimos 4 videos contra el reposo",
+                "Cambio = videos - reposo. Wilcoxon pareado, p sin corregir (analisis no planeado de antemano).",
+                tabla)
+
     # --- P2 y su complemento ---
     t = leer(TABLAS / "p2_respuesta_inicial.csv")
     if t is not None:
@@ -271,7 +286,7 @@ def imprimir_resumen():
                               "Cambio video 1 a 16 (mediana)": t.mediana_cambio_1_a_16.map("{:+.2f}".format),
                               "Bajan / suben": t.bajan.astype(str) + " / " + t.suben.astype(str),
                               **_columnas_test(t),
-                              "Sentido": t.sentido})
+                              "Sentido": _sentido(t)})
         seccion("P3a. ¿La respuesta cambia a lo largo de los 16 videos? (habituacion entre videos)",
                 "Cambio = pendiente por video de cada persona. Wilcoxon de las pendientes contra 0 + Holm.",
                 tabla)
@@ -287,6 +302,16 @@ def imprimir_resumen():
                 "¿Importa la posicion del video? W de Kendall: 0.1 chico, 0.3 mediano, 0.5 grande.",
                 tabla)
 
+    t = leer(TABLAS / "exploratorio_mitades.csv")
+    if t is not None:
+        tabla = pd.DataFrame({"Metrica": t.metrica, "Medida": t.medida,
+                              "Bajan / suben": t.bajan.astype(str) + " / " + t.suben.astype(str),
+                              **_columnas_test(t, con_holm=False)})
+        seccion("P3a, exploratorio: ¿cambio gradual o salto entre las dos mitades?",
+                "Pendiente por video dentro de cada mitad y salto = videos 9-10 menos videos 7-8. "
+                "Wilcoxon contra 0, p sin corregir.",
+                tabla)
+
     # --- P3b y su replicacion ---
     t = leer(TABLAS / "p3b_dentro_del_video.csv")
     if t is not None:
@@ -295,7 +320,7 @@ def imprimir_resumen():
                               "Ultimos 10 s": t.mediana_ultima.map("{:.2f}".format),
                               "Bajan / suben": t.bajan.astype(str) + " / " + t.suben.astype(str),
                               **_columnas_test(t),
-                              "Sentido": t.sentido})
+                              "Sentido": _sentido(t)})
         seccion("P3b. ¿La respuesta cambia dentro de cada video? (Group3)",
                 "Cambio = ultimos 10 s - primeros 10 s, promediado sobre los 16 videos. Wilcoxon pareado + Holm.",
                 tabla)
@@ -305,7 +330,7 @@ def imprimir_resumen():
         tabla = pd.DataFrame({"Grupo": t.grupo, "Metrica": t.metrica,
                               "Bajan / suben": t.bajan.astype(str) + " / " + t.suben.astype(str),
                               **_columnas_test(t),
-                              "Sentido": t.sentido})
+                              "Sentido": _sentido(t)})
         seccion("P3b, replicacion (exploratoria): la misma comparacion en los tres grupos",
                 "Group2 y Group4 hacen biofeedback durante los videos: solo vale la comparacion dentro del video.",
                 tabla)

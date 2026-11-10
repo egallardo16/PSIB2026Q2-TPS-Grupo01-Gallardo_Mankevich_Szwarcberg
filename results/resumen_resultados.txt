@@ -41,6 +41,18 @@ Cambio = videos - reposo, por persona. Wilcoxon pareado + Holm; la conclusion sa
     pNN20            39.83            39.36 18       -4.11   [-9.55, 3.11] -0.36 0.196  0.393      no         si
 HRV_ihmig             0.08            -0.02 18       +0.19   [-0.10, 0.76] +0.32 0.246  0.393      no         si
 
+P1, exploratorio: primeros 4 y ultimos 4 videos contra el reposo
+----------------------------------------------------------------
+Cambio = videos - reposo. Wilcoxon pareado, p sin corregir (analisis no planeado de antemano).
+
+       Tramo Metrica Videos (mediana) Reposo (mediana)  n Cambio (HL)         IC 95 %     r     p Signif. t coincide
+  videos 1-4   Nmean             3.51            -0.03 18       +4.14    [1.44, 6.52] +0.71 0.007      si         si
+  videos 1-4    SDNN            43.56            56.13 18      -14.72 [-24.18, -2.85] -0.61 0.021      si         si
+  videos 1-4   rMSSD            26.79            30.48 18       -7.00 [-13.62, -0.30] -0.57 0.034      si         si
+videos 13-16   Nmean            -0.57            -0.03 18       +0.17   [-1.61, 1.87] +0.06 0.832      no         si
+videos 13-16    SDNN            51.24            56.13 18       -4.88  [-12.94, 2.04] -0.36 0.196      no         si
+videos 13-16   rMSSD            32.01            30.48 18       -0.86   [-5.29, 2.88] -0.12 0.671      no         si
+
 P2. ¿La HR cambia apenas empieza el video?
 ------------------------------------------
 Cambio = HR(primeros 10 s del video) - HR(10 s previos). Wilcoxon contra 0.
@@ -61,7 +73,7 @@ Cambio = pendiente por video de cada persona. Wilcoxon de las pendientes contra 
 
   Metrica Cambio video 1 a 16 (mediana) Bajan / suben  n Cambio (HL)        IC 95 %     r     p p Holm Signif. t coincide          Sentido
     Nmean                         -5.11        16 / 2 18       -0.33 [-0.45, -0.18] -0.80 0.002  0.006      si         si menos activacion
-     SDNN                         +7.72        3 / 15 18       +0.53  [-0.19, 1.16] +0.51 0.060  0.120      no         si menos activacion
+     SDNN                         +7.72        3 / 15 18       +0.53  [-0.19, 1.16] +0.51 0.060  0.120      no         si                -
     rMSSD                         +4.77        3 / 15 18       +0.35   [0.16, 0.72] +0.79 0.002  0.006      si         si menos activacion
     pNN20                         +8.19        2 / 16 18       +0.55   [0.27, 0.88] +0.81 0.001  0.006      si         si menos activacion
 HRV_ihmig                         +0.08        7 / 11 18       +0.02  [-0.01, 0.05] +0.27 0.325  0.325      no         si                -
@@ -77,6 +89,21 @@ P3a, complemento: Friedman sobre las 16 posiciones de video
     pNN20 18 44.2         0.16 < 0.001 < 0.001      si
 HRV_ihmig 18 16.5         0.06   0.352   0.352      no
 
+P3a, exploratorio: ¿cambio gradual o salto entre las dos mitades?
+-----------------------------------------------------------------
+Pendiente por video dentro de cada mitad y salto = videos 9-10 menos videos 7-8. Wilcoxon contra 0, p sin corregir.
+
+Metrica              Medida Bajan / suben  n Cambio (HL)        IC 95 %     r       p Signif. t coincide
+  Nmean   pendiente mitad 1        12 / 6 18       -0.24  [-0.55, 0.08] -0.37   0.181      no         si
+  Nmean   pendiente mitad 2        7 / 11 18       +0.00  [-0.21, 0.17] +0.01   1.000      no         si
+  Nmean salto (9-10 vs 7-8)        16 / 2 18       -2.63 [-3.79, -1.51] -0.84 < 0.001      si         si
+  rMSSD   pendiente mitad 1        10 / 8 18       -0.01  [-0.48, 0.65] -0.02   0.966      no         si
+  rMSSD   pendiente mitad 2        7 / 11 18       +0.26  [-0.14, 0.95] +0.37   0.181      no         si
+  rMSSD salto (9-10 vs 7-8)        5 / 13 18       +1.67  [-0.38, 3.36] +0.42   0.130      no         si
+  pNN20   pendiente mitad 1        8 / 10 18       +0.33  [-0.66, 1.35] +0.18   0.523      no         si
+  pNN20   pendiente mitad 2         9 / 9 18       +0.18  [-0.46, 1.22] +0.20   0.468      no         si
+  pNN20 salto (9-10 vs 7-8)        7 / 11 18       +2.31  [-2.02, 6.03] +0.29   0.304      no         si
+
 P3b. ¿La respuesta cambia dentro de cada video? (Group3)
 --------------------------------------------------------
 Cambio = ultimos 10 s - primeros 10 s, promediado sobre los 16 videos. Wilcoxon pareado + Holm.
@@ -84,7 +111,7 @@ Cambio = ultimos 10 s - primeros 10 s, promediado sobre los 16 videos. Wilcoxon 
 Metrica Primeros 10 s Ultimos 10 s Bajan / suben  n Cambio (HL)        IC 95 %     r       p  p Holm Signif. t coincide          Sentido
   Nmean          4.40         0.73        18 / 0 18       -2.03 [-3.57, -1.21] -1.00 < 0.001 < 0.001      si         si menos activacion
     std          4.91         3.97        17 / 1 18       -1.03 [-1.32, -0.77] -0.81   0.001   0.003      si         si                -
-  rMSSD         28.82        29.02        11 / 7 18       -0.09  [-0.92, 1.70] -0.04   0.899   0.899      no         si   mas activacion
+  rMSSD         28.82        29.02        11 / 7 18       -0.09  [-0.92, 1.70] -0.04   0.899   0.899      no         si                -
 
 P3b, replicacion (exploratoria): la misma comparacion en los tres grupos
 ------------------------------------------------------------------------
@@ -93,10 +120,10 @@ Group2 y Group4 hacen biofeedback durante los videos: solo vale la comparacion d
  Grupo Metrica Bajan / suben  n Cambio (HL)        IC 95 %     r       p  p Holm Signif. t coincide          Sentido
 Group3   Nmean        18 / 0 18       -2.03 [-3.57, -1.21] -1.00 < 0.001 < 0.001      si         si menos activacion
 Group3     std        17 / 1 18       -1.03 [-1.32, -0.77] -0.81   0.001   0.003      si         si                -
-Group3   rMSSD        11 / 7 18       -0.09  [-0.92, 1.70] -0.04   0.899   0.899      no         si   mas activacion
+Group3   rMSSD        11 / 7 18       -0.09  [-0.92, 1.70] -0.04   0.899   0.899      no         si                -
 Group2   Nmean        18 / 1 19       -2.12 [-2.54, -1.66] -0.91 < 0.001 < 0.001      si         si menos activacion
 Group2     std        13 / 7 20       -0.20  [-0.52, 0.16] -0.33   0.202   0.202      no         si                -
-Group2   rMSSD        6 / 14 20       +1.45   [0.25, 2.64] +0.54   0.033   0.066      no         no menos activacion
+Group2   rMSSD        6 / 14 20       +1.45   [0.25, 2.64] +0.54   0.033   0.066      no         no                -
 Group4   Nmean        14 / 5 19       -1.58 [-2.94, -0.35] -0.64   0.012   0.037      si         si menos activacion
 Group4     std        7 / 12 19       +0.35  [-0.13, 0.81] +0.40   0.134   0.267      no         si                -
-Group4   rMSSD        8 / 11 19       +1.10  [-1.54, 3.62] +0.22   0.418   0.418      no         si menos activacion
+Group4   rMSSD        8 / 11 19       +1.10  [-1.54, 3.62] +0.22   0.418   0.418      no         si                -
