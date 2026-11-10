@@ -30,10 +30,11 @@ lpm, sino cuanto se aparta de su propio nivel de reposo.
 
 Advertencia sobre el basal: el reposo del protocolo es el evento
 BIOFEEDBACK-REST, que esta al final del experimento y no antes, por lo que no
-es una linea de base previa a la exposicion. Ademas, en Group2 y Group4 ese
-reposo viene precedido por un entrenamiento de biofeedback respiratorio, que
-modifica la variabilidad cardiaca por diseño. Por eso el analisis principal se
-restringe a Group3, el unico grupo sin ese entrenamiento.
+es una linea de base previa a la exposicion. Ademas, en Group2 y Group4 durante
+los videos hacian una tarea de pseudo-biofeedback (tapping) que no hacian en el
+reposo, asi que la comparacion videos vs reposo quedaria confundida con la
+tarea. Por eso el analisis principal se restringe a Group3, el unico grupo sin
+esa tarea.
 """
 
 import sys

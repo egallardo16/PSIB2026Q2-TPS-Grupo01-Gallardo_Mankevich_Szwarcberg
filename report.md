@@ -15,7 +15,7 @@ ECG crudo → filtrado → detección de QRS → serie RR → serie NN → venta
 ```
 
 1. **Carga.** Se lee el ECG (en mV) y el eje de tiempo se arma como número de muestra / 100 Hz. Los triggers dicen cuándo empezó y terminó cada video y el reposo. El orden en que cada persona vio los videos se saca de esos horarios, porque fue al azar.
-2. **Filtrado.** Pasabanda Butterworth de 0,5 a 40 Hz, aplicado ida y vuelta para no desfasar la señal. El pasa-altos saca la deriva de la línea de base; el pasa-bajos, el ruido de alta frecuencia.
+2. **Filtrado.** Pasabanda Butterworth de 0,5 a 40 Hz, aplicado ida y vuelta para no desfasar la señal. El pasa-altos saca la deriva de la línea de base; el pasa-bajos, el ruido de alta frecuencia. Se comparó con un filtro óptimo de Wiener (ver Resultados): detecta los mismos latidos, así que se mantuvo el Butterworth.
 3. **Detección de QRS (Pan-Tompkins).** Pasabanda de 5 a 15 Hz, derivada, cuadrado, promedio móvil de 150 ms y umbrales que se adaptan a la señal. Da la posición de cada pico R.
 4. **Serie RR.** El tiempo entre picos R consecutivos.
 5. **Serie NN (limpieza).** Se descartan los intervalos que no pueden ser latidos reales: fuera de 300–2000 ms (30 a 200 lpm; Task Force, 1996), o que cambian más de un 20 % respecto del anterior. Los descartados no se rellenan: interpolar inventa valores y baja artificialmente la HRV.
@@ -120,7 +120,7 @@ Solo cumplen **Nmean, avNN, std y rMSSD**. Las demás se usan solo en ventanas d
 
 | Decisión | Por qué |
 |---|---|
-| **Solo Group3** (18 personas) | En Group2 y Group4 el reposo viene justo después de un ejercicio de respiración lenta (biofeedback), que sube la variabilidad a propósito. Como el reposo es nuestra referencia, en esos grupos la comparación quedaría alterada. Group3 no hizo ese ejercicio. La única excepción es la replicación de P3b, que no usa el reposo |
+| **Solo Group3** (18 personas) | En Group2 y Group4, durante todos los videos hacían una tarea de pseudo-biofeedback (golpear la mesa siguiendo una señal; Schäfer et al., 2018) que no hacían en el reposo, y que termina menos de 3 minutos antes de este. Como el reposo es nuestra referencia, en esos grupos la comparación quedaría alterada. Group3 no tiene ninguna tarea registrada. La única excepción es la replicación de P3b, que no usa el reposo |
 | **Ventanas de 60 s** como análisis principal | Cada video dura unos 60 s, así que una ventana es un video entero. Ihmig et al. usan 10 y 60 s, y Pereira et al. (2017) muestran que la HRV es usable en ventanas de alrededor de 1 minuto |
 | **El reposo se corta en ventanas de 60 s** | Para comparar videos y reposo con el mismo largo, porque varias métricas cambian con la duración de la ventana |
 | **Ventana válida** si conserva al menos el 70 % de los latidos esperados | Con menos, la ventana quedó muy recortada por los latidos descartados y sus métricas no representan ese minuto. Es un criterio nuestro, sin cita |
@@ -173,6 +173,8 @@ Todo se genera con `python modulos/estadisticas.py` y queda en `results/tables/`
 | `p3b_dentro_del_video.csv` | P3b |
 | `p3b_replicacion.csv` | P3b repetido en Group2 y Group4 |
 
+La comparación de filtros la genera `python scripts/comparar_wiener.py` y queda en `wiener_resumen.csv` y `wiener_por_participante.csv`. `python main.py` corre todo e imprime un resumen de todas estas tablas.
+
 ### Cómo leer las tablas
 
 | Columna | Qué mirar |
@@ -189,6 +191,21 @@ Todo se genera con `python modulos/estadisticas.py` y queda en `results/tables/`
 | columnas con `t_` | Lo mismo, calculado con la t (sensibilidad) |
 
 ## Resultados
+
+**Filtro óptimo (Wiener) vs Butterworth** (Group3, n = 18; `scripts/comparar_wiener.py`)
+
+El filtro de Wiener es el que minimiza el error cuadrático medio entre la señal filtrada y la señal deseada: H(f) = Sss / (Sss + Snn). Como no tenemos la señal limpia, la estimamos con el latido promedio de cada persona repetido en cada pico R; el ruido es el ECG menos esa estimación. Los dos espectros se calculan con Welch, con tramos de 4096 muestras (41 s): dan una resolución de ~0,1 Hz, suficiente para separar la deriva de línea de base (< 0,5 Hz) de la frecuencia cardíaca (1–1,7 Hz), y como cada registro dura unos 34 minutos se promedian unos 97 tramos, lo que mantiene estable la estimación.
+
+| Medida | Butterworth | Wiener | Cambio (HL) | p (Wilcoxon) |
+|---|---|---|---|---|
+| SNR | 9,66 dB | 10,21 dB | +0,72 dB | < 0,001 |
+| Latidos detectados | 2971 | 2971 | 0 | 1,0 |
+| Intervalos descartados | 0,29 % | 0,29 % | 0 | 0,72 |
+
+- **El Wiener limpia algo más la señal** (+0,7 dB), pero esa medida lo favorece por construcción: el filtro se diseña para parecerse al latido promedio, que es justamente contra lo que se mide la SNR.
+- **La detección no cambia:** los picos R coinciden en un 99,96–100 % entre los dos filtros y se descarta el mismo porcentaje de intervalos. Pan-Tompkins aplica su propio pasabanda de 5–15 Hz, así que el filtro previo pesa poco.
+- Por eso se mantuvo el Butterworth. No es que filtre mejor, sino que es más práctico: es el mismo filtro para todos, mientras que el Wiener se diseña para cada persona y necesita los picos R ya detectados para armar el latido promedio (que se obtienen de la señal filtrada con el Butterworth).
+- La figura `13_wiener_vs_butterworth.png` muestra el diseño (espectros y ganancia de los dos filtros) y el ECG filtrado con cada uno.
 
 **P1** (Group3, n = 18, ventanas de 60 s):
 
@@ -254,7 +271,7 @@ La HR baja y la HRV sube a lo largo de la sesión: la activación es alta al pri
 Como la mitad 2 siempre fueron los clips 9 a 16, ese salto puede deberse a tres cosas que no podemos separar:
 - que la gente se calma con el tiempo;
 - que esos clips generan menos respuesta;
-- que algo cambió entre las mitades. Según nuestra guía, a partir del clip 9 cambian las preguntas que se hacen entre videos (a confirmar en Ihmig et al., 2020).
+- que algo cambió entre las mitades. A partir del clip 9, las preguntas que se hacen entre videos pasan de aspectos cognitivos a aspectos emocionales positivos (Schäfer et al., 2018).
 
 Por eso, P3a muestra que la activación es menor en la segunda mitad de la sesión, pero no alcanza para hablar de una habituación gradual video a video.
 
@@ -323,7 +340,7 @@ La t llega a lo mismo. Es decir, la HR no sube cuando aparece la araña (por eso
 
 - **No sabemos por qué la activación es menor en la segunda mitad.** Puede ser que se acostumbran a las arañas, que se relajan con el tiempo, que los clips 9 a 16 generan menos respuesta, o el cambio de preguntas a partir del clip 9. Los videos se mostraron en dos mitades fijas, así que el diseño no permite separar estas causas.
 - **No sabemos si la activación antes de cada video es miedo anticipado o efecto de responder las preguntas** sobre el video anterior.
-- **Los resultados valen para Group3** (18 personas sin entrenamiento de biofeedback). La excepción es la baja de la HR dentro del video, que también comprobamos en Group2 y Group4. El resto (P1, P2, P3a) no se puede extender a esos grupos, porque usa el reposo o compara momentos de la sesión en los que estaban haciendo biofeedback.
+- **Los resultados valen para Group3** (18 personas sin tarea de pseudo-biofeedback). La excepción es la baja de la HR dentro del video, que también comprobamos en Group2 y Group4. El resto (P1, P2, P3a) no se puede extender a esos grupos, porque usa el reposo o compara momentos de la sesión en los que estaban haciendo la tarea.
 - **El ECG no diagnostica ansiedad.** Lo que mostramos son cambios en la actividad cardíaca entre condiciones, compatibles con más activación durante la exposición.
 
 
@@ -344,6 +361,7 @@ La t llega a lo mismo. Es decir, la HR no sube cuando aparece la araña (por eso
 - Rahman, S., Habel, M., & Contrada, R. J. (2018). *Int J Psychophysiol*.
 - Rochon, J., & Kieser, M. (2011). *Br J Math Stat Psychol*, 64(3), 410–426.
 - Rochon, J., Gondan, M., & Kieser, M. (2012). *BMC Med Res Methodol*, 12, 81.
+- Schäfer, S. K., et al. (2018). *Trials*, 19, 184.
 - Shaffer, F., & Ginsberg, J. P. (2017). *Front Public Health*, 5, 258.
 - Student (1908). *Biometrika*, 6(1), 1–25.
 - Task Force of the ESC and NASPE (1996). *Circulation*, 93(5), 1043–1065.

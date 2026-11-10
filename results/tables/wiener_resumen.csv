@@ -1,0 +1,4 @@
+medida,mediana_butterworth,mediana_wiener,n,test,estadistico,p,diferencia,ic95_inf,ic95_sup,efecto
+SNR [dB],9.66,10.21,18,Wilcoxon,0.0,7.62939453125e-06,0.7150000000000007,0.5500000000000007,0.9600000000000004,1.0
+Latidos detectados,2971.5,2971.5,18,Wilcoxon,1.5,1.0,0.0,0.0,0.0,0.0
+Intervalos descartados [%],0.28500000000000003,0.28500000000000003,18,Wilcoxon,4.0,0.7150006546880893,0.0,0.0,0.0,-0.2

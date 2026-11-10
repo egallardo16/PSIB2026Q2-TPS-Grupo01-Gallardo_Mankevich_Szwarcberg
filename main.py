@@ -9,11 +9,12 @@
 # Pasos:
 # 1. descarga     : baja el dataset de PhysioNet (solo si no esta en data/raw/)
 # 2. procesamiento: filtrado, Pan-Tompkins, serie RR y NN de los 57 registros (tarda varios minutos)
-# 3. metricas     : ventanas de 60 y 10 s y metricas de HR/HRV de cada una
-# 4. seleccion    : que metricas sirven a 10 s y una representante por familia
-# 5. estadistica  : tests de P1, P2, P3a y P3b
-# 6. figuras      : figuras del procesamiento y de los resultados
-# 7. resumen      : imprime las tablas de resultados de cada pregunta y las
+# 3. wiener       : compara el filtro optimo (Wiener) con el Butterworth del pipeline
+# 4. metricas     : ventanas de 60 y 10 s y metricas de HR/HRV de cada una
+# 5. seleccion    : que metricas sirven a 10 s y una representante por familia
+# 6. estadistica  : tests de P1, P2, P3a y P3b
+# 7. figuras      : figuras del procesamiento y de los resultados
+# 8. resumen      : imprime las tablas de resultados de cada pregunta y las
 #                   guarda en results/resumen_resultados.txt
 
 import argparse
@@ -38,6 +39,7 @@ LOG = RAIZ / "results" / "log_ejecucion.txt"     # todo lo que imprimen los scri
 PASOS = {
     "descarga": ["scripts/descargar_dataset.py"],
     "procesamiento": ["scripts/procesar_registros.py"],
+    "wiener": ["scripts/comparar_wiener.py"],          # usa los picos R del paso anterior
     "metricas": ["modulos/ventanas.py"],
     "seleccion": ["scripts/estabilidad_ventanas.py",    # -> metricas aptas para 10 s
                   "scripts/correlacion_metricas.py"],   # -> familias_metricas.csv (la usa estadistica)
@@ -200,6 +202,19 @@ def imprimir_resumen():
         })
         seccion("Procesamiento de la señal (57 registros)",
                 "Intervalos descartados: fuera de 300-2000 ms o con un salto > 20 % respecto del anterior.",
+                tabla)
+
+    # --- Filtro optimo: Wiener vs Butterworth ---
+    t = leer(TABLAS / "wiener_resumen.csv")
+    if t is not None:
+        tabla = pd.DataFrame({"Medida": t.medida, "n": t.n,
+                              "Butterworth (mediana)": t.mediana_butterworth.map("{:.2f}".format),
+                              "Wiener (mediana)": t.mediana_wiener.map("{:.2f}".format),
+                              "Cambio (HL)": t.diferencia.map("{:+.2f}".format),
+                              "p": t.p.map(lambda p: "-" if pd.isna(p) else _p(p))})
+        seccion("Filtro optimo (Wiener) vs Butterworth (Group3)",
+                "Cambio = Wiener - Butterworth. El SNR favorece al Wiener por construccion; "
+                "lo que decide es la deteccion.",
                 tabla)
 
     # --- Metricas elegidas ---

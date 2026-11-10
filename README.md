@@ -92,7 +92,7 @@ registros de `registros/` están incluidos en el repositorio como muestra.
 ├── requirements.txt
 ├── Exploratorio.ipynb          # exploración del dataset y de la estructura de los registros
 ├── modulos/
-│   ├── preprocesamiento.py     # carga de los registros y filtro pasabanda
+│   ├── preprocesamiento.py     # carga de los registros, filtro pasabanda y filtro de Wiener
 │   ├── procesamiento.py        # Pan-Tompkins, detección de QRS, serie RR, latidos ectópicos
 │   ├── eventos.py              # marcas temporales del protocolo, desde Triggers.txt
 │   ├── intervalos.py           # serie NN: criterios de validez y descarte de artefactos
@@ -104,6 +104,7 @@ registros de `registros/` están incluidos en el repositorio como muestra.
 ├── scripts/
 │   ├── descargar_dataset.py    # descarga del dataset desde PhysioNet
 │   ├── procesar_registros.py   # pipeline completo sobre los 57 registros
+│   ├── comparar_wiener.py      # filtro óptimo (Wiener) vs Butterworth, en Group3
 │   ├── estabilidad_ventanas.py # qué métricas son confiables en ventanas de 10 s
 │   ├── correlacion_metricas.py # agrupa las métricas en familias y elige una representante
 │   ├── generar_figuras.py      # figuras del procesamiento y de la habituación
@@ -144,8 +145,8 @@ corregido. El mismo resumen queda guardado en `results/resumen_resultados.txt`;
 las tablas completas, en `results/tables/`; y todo lo que imprime cada script,
 en `results/log_ejecucion.txt`.
 
-Los pasos posibles para `--desde` son `descarga`, `procesamiento`, `metricas`,
-`seleccion`, `estadistica`, `figuras` y `resumen`. Abajo se explica cada paso
+Los pasos posibles para `--desde` son `descarga`, `procesamiento`, `wiener`,
+`metricas`, `seleccion`, `estadistica`, `figuras` y `resumen`. Abajo se explica cada paso
 por separado.
 
 **1. Procesar los registros.** Es el paso principal: carga cada ECG, lo filtra,
@@ -226,6 +227,7 @@ guarda en `data/features/metricas_group2.csv` y `metricas_group4.csv`.
 | 10 | P3a: HR y rMSSD a lo largo de la sesión, con el nivel del reposo |
 | 11 | P2 y P3b: HR antes y durante el video |
 | 12 | P3b en los tres grupos: cambio de HR dentro del video |
+| 13 | filtro de Wiener: su diseño y el ECG filtrado contra el Butterworth (la genera `comparar_wiener.py`) |
 
 **Inspeccionar un participante.** Los módulos se pueden ejecutar sueltos para
 ver qué producen:
@@ -245,7 +247,10 @@ tacograma y la correlación de cada latido con su plantilla local.
 ## Procesamiento de la señal
 
 1. **Filtrado.** Pasabanda Butterworth de orden 3 entre 0,5 y 40 Hz, aplicado
-   hacia adelante y hacia atrás para no introducir desfasaje.
+   hacia adelante y hacia atrás para no introducir desfasaje. Se comparó con
+   un filtro óptimo de Wiener (`scripts/comparar_wiener.py`): limpia algo más
+   la señal, pero detecta los mismos latidos, así que el pipeline mantiene el
+   Butterworth.
 2. **Detección de QRS.** Pan-Tompkins: pasabanda 5–15 Hz, derivador, cuadrado,
    media móvil de 150 ms y umbralizado adaptativo con discriminación de onda T.
 3. **Serie NN.** Se descartan los intervalos que no pueden corresponder a
@@ -279,9 +284,9 @@ Sobre los 57 participantes: **182 496 intervalos**, de los cuales se descarta el
 El detalle de cada decisión, con su justificación y referencias, está en
 [`report.md`](report.md).
 
-- **Participantes:** solo **Group3** (n = 18). En Group2 y Group4 el reposo,
-  que es la referencia, viene después de un entrenamiento de respiración lenta
-  que modifica la HRV. La excepción es P3b, que no usa el reposo y se repite
+- **Participantes:** solo **Group3** (n = 18). En Group2 y Group4, durante los videos
+  hacían una tarea de pseudo-biofeedback (tapping) que no hacían en el reposo,
+  que es la referencia. La excepción es P3b, que no usa el reposo y se repite
   en Group2 y Group4 como replicación exploratoria.
 - **Métricas:** de las 14 calculadas se testean 5 representantes, una por
   familia de métricas que miden lo mismo: Nmean (HR), SDNN, rMSSD, pNN20 (HRV)
@@ -320,9 +325,10 @@ El detalle de cada decisión, con su justificación y referencias, está en
 - El reposo final (`BIOFEEDBACK-REST`, 300 s) está presente en 56 de los 57
   participantes: **VP26 no lo tiene**. En VP03 la grabación corta antes de que
   termine, quedando 190 s de los 300.
-- De los tres grupos del estudio, solo **Group3** no recibió entrenamiento de
-  biofeedback respiratorio antes del reposo. En Group2 y Group4, 38 de 39
-  participantes tienen un evento de biofeedback inmediatamente previo, lo que
-  hay que tener en cuenta si se usa el reposo como línea de base.
+- De los tres grupos del estudio, solo **Group3** no tiene una tarea de
+  pseudo-biofeedback registrada. En Group2 y Group4, 38 de 39 participantes
+  tienen el evento `BIOFEEDBACK-OXYGEN-TRAININGS` durante toda la sesión de
+  videos (una tarea de tapping; Schäfer et al., 2018), que termina poco antes
+  del reposo. Hay que tenerlo en cuenta si se usa el reposo como línea de base.
 - Group3 es además el grupo con mejor calidad de señal: descarta en promedio el
   0,85 % de los intervalos y ninguno de sus 18 participantes supera el 5 %.

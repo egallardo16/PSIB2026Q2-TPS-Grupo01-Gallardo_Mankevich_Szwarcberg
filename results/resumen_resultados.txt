@@ -10,6 +10,15 @@ Intervalos descartados: fuera de 300-2000 ms o con un salto > 20 % respecto del 
  Participantes  Intervalos RR   Descartados  Por rango  Por salto brusco HR media [lpm]              > 5 % descartado
             57         182496 4316 (2.36 %)       1122              3194           82.9 VP70 (59.71 %), VP23 (8.25 %)
 
+Filtro optimo (Wiener) vs Butterworth (Group3)
+----------------------------------------------
+Cambio = Wiener - Butterworth. El SNR favorece al Wiener por construccion; lo que decide es la deteccion.
+
+                    Medida  n Butterworth (mediana) Wiener (mediana) Cambio (HL)       p
+                  SNR [dB] 18                  9.66            10.21       +0.72 < 0.001
+        Latidos detectados 18               2971.50          2971.50       +0.00   1.000
+Intervalos descartados [%] 18                  0.29             0.29       +0.00   0.715
+
 Metricas: una representante por familia (las que se testean)
 ------------------------------------------------------------
 Metricas confiables en ventanas de 10 s: Nmean, avNN, rMSSD, std.
