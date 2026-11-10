@@ -36,7 +36,8 @@ versión 1.0.0, publicado en PhysioNet por Ihmig et al. (2020).
 
 ## Instalación
 
-Requiere **Python 3.10 o superior** (desarrollado con 3.14.6).
+Requiere **Python 3.10 o superior**. Probado con 3.12.9 y 3.14.6: las salidas
+son idénticas en ambas.
 
 ```bash
 git clone https://github.com/egallardo16/TPS_ECG_GRUPO1.git
@@ -107,6 +108,7 @@ registros de `registros/` están incluidos en el repositorio como muestra.
 │   ├── comparar_wiener.py      # filtro óptimo (Wiener) vs Butterworth, en Group3
 │   ├── estabilidad_ventanas.py # qué métricas son confiables en ventanas de 10 s
 │   ├── correlacion_metricas.py # agrupa las métricas en familias y elige una representante
+│   ├── sensibilidad_umbral.py  # sobre qué rango de umbrales de validez se mantienen las conclusiones
 │   ├── generar_figuras.py      # figuras del procesamiento y de la habituación
 │   └── figuras_estadisticas.py # figuras de los resultados estadísticos
 ├── registros/                  # 5 registros de muestra, versionados
@@ -191,6 +193,22 @@ Analiza qué métricas son confiables en 10 s y agrupa las que miden lo mismo:
 ~/.venvs/psib-tps/bin/python scripts/estabilidad_ventanas.py
 ~/.venvs/psib-tps/bin/python scripts/correlacion_metricas.py
 ```
+
+**Sobre qué rango de umbrales valen las conclusiones** (opcional). Una ventana
+se acepta si conserva al menos cierta fracción de los intervalos esperados.
+Como la bibliografía no fija un valor para ese piso, este script repite los
+tres tests principales con umbrales del 50 % al 99 % y reporta el rango en el
+que las conclusiones se mantienen estables:
+
+```bash
+~/.venvs/psib-tps/bin/python scripts/sensibilidad_umbral.py
+```
+
+Las trece comparaciones dan resultados idénticos entre el 50 % y el 90 %. Por
+encima del 90 % el criterio descarta una fracción creciente de ventanas (27 %
+al 95 %, 59 % al 99 %) y los cambios responden a la pérdida de potencia. El
+trabajo usa el **70 %**, punto medio del rango estable, con el que las ventanas
+aceptadas conservan al menos 60 intervalos NN en las de 60 s.
 
 **4. Correr los tests estadísticos.** Imprime los resultados de cada pregunta y
 los guarda en `results/tables/`:
